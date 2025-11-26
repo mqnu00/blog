@@ -4,6 +4,11 @@ import { defineConfig } from 'vitepress'
 export default defineConfig({
   title: "广习习的博客",
   description: "分享技术与生活的个人博客",
+  vite: {
+    server: {
+      host: '0.0.0.0'
+    }
+  },
   head: [
     ['link', { rel: 'icon', href: '/favicon.ico' }],
     ['meta', { name: 'author', content: '广习习' }],
