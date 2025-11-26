@@ -6,9 +6,6 @@ hero:
   name: "广习习的博客"
   text: "分享技术与生活"
   tagline: 记录成长的每一步
-  image:
-    src: /logo.png
-    alt: 广习习的博客
 
 actions:
   - theme: brand
