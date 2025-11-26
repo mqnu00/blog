@@ -19,7 +19,7 @@
     "skipLibCheck": true               // 跳过库的类型检查，加快编译
   },
   "include": [
-    ".vitepress/**/*",            // VitePress 配置文件
+    "./blog/.vitepress/**/*",            // VitePress 配置文件
     "**/*.ts",                    // 文档里可能的 TS 文件
     "**/*.d.ts"                   // 类型声明文件
   ],
