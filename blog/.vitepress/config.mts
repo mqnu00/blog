@@ -28,17 +28,19 @@ export default defineConfig({
       { text: '关于', link: '/about' }
     ],
 
-    sidebar: [
-      {
-        text: '文章列表',
-        items: [
-          { text: '我的第一篇博客', link: '/posts/my-first-post' },
-          { text: 'VitePress使用技巧', link: '/posts/vitepress-tips' },
-          { text: 'VitePress中的Markdown扩展功能', link: '/posts/markdown-extensions' },
-          { text: 'VitePress运行时API详解', link: '/posts/runtime-api-examples' }
-        ]
-      }
-    ],
+    sidebar: {
+      '/posts/': [
+          {
+          text: '文章列表',
+          items: [
+            { text: '我的第一篇博客', link: '/posts/my-first-post' },
+            { text: 'VitePress使用技巧', link: '/posts/vitepress-tips' },
+            { text: 'VitePress中的Markdown扩展功能', link: '/posts/markdown-extensions' },
+            { text: 'VitePress运行时API详解', link: '/posts/runtime-api-examples' }
+          ]
+        }
+      ]
+    },
 
     socialLinks: [
       { icon: 'github', link: 'https://github.com/your-username' }
