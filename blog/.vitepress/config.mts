@@ -11,7 +11,7 @@ export default defineConfig({
     }
   },
   head: [
-    ['link', { rel: 'icon', href: '/favicon.ico' }],
+    ['link', { rel: 'icon', href: '/blog/favicon.ico' }],
     ['meta', { name: 'author', content: '广习习' }],
     ['meta', { name: 'keywords', content: '技术博客, Vue, VitePress, 前端开发, JavaScript' }],
     ['meta', { property: 'og:type', content: 'website' }],
