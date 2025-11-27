@@ -47,11 +47,11 @@ export default defineConfig({
       }),
     ],
     optimizeDeps: {
-      include: ['naive-ui'],                  // 防止预构建再拿 lib/
+      include: ['naive-ui', 'vueuc'],                  // 防止预构建再拿 lib/
     },
     ssr: {
       // SSR 阶段也强制 ESM，不再 external 它们
-      noExternal: ['naive-ui'],
+      noExternal: ['naive-ui', 'vueuc'],
     },
   },
   head: [
