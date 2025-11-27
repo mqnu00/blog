@@ -67,6 +67,10 @@ export default defineConfig({
     search: {
       provider: 'local'
     },
+    outline: {
+      level: [1, 6], // 显示 h2 和 h3 标题
+      label: '目录'   // 目录标题文字
+    },
     nav: [
       { text: '首页', link: '/' },
       { text: '博客', link: '/posts/' },
@@ -75,6 +79,13 @@ export default defineConfig({
 
     sidebar: {
       '/posts/': [
+          {
+            text: '前端',
+            collapsed: false,
+            items: [
+              { text: '在win11开发兼容ie的网页', link: '/posts/frontend/develop-ie-win11/develop-ie-win11' },
+            ]
+          },
           {
             text: 'vitepress示例',
             collapsed: true,
@@ -85,13 +96,6 @@ export default defineConfig({
               { text: 'VitePress运行时API详解', link: '/posts/vitepress/runtime-api-examples' }
             ]
           },
-          {
-            text: '前端',
-            collapsed: false,
-            items: [
-              { text: '在win11开发兼容ie的网页', link: '/posts/frontend/develop-ie-win11/develop-ie-win11' },
-            ]
-          }
       ]
     },
 
