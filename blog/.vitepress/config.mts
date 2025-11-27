@@ -1,4 +1,7 @@
 import { defineConfig } from 'vitepress'
+import Components from 'unplugin-vue-components/vite'
+import { NaiveUiResolver } from 'unplugin-vue-components/resolvers'
+import AutoImport from 'unplugin-auto-import/vite'
 
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
@@ -9,7 +12,20 @@ export default defineConfig({
   vite: {
     server: {
       host: '0.0.0.0'
-    }
+    },
+    plugins: [
+      // 自动导入 Vue API（ref、computed 等）
+      AutoImport({
+        imports: ['vue'],
+        resolvers: [NaiveUiResolver()],
+        dts: '.vitepress/auto-imports.d.ts',
+      }),
+      // 自动导入 Naive UI 组件
+      Components({
+        resolvers: [NaiveUiResolver()],
+        dts: '.vitepress/components.d.ts',
+      }),
+    ],
   },
   head: [
     ['link', { rel: 'icon', href: '/blog/favicon.ico' }],
