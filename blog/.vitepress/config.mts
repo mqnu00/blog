@@ -5,6 +5,7 @@ export default defineConfig({
   base: '/blog/',
   title: "广习习的博客",
   description: "分享技术与生活的个人博客",
+  lastUpdated: true,
   vite: {
     server: {
       host: '0.0.0.0'
@@ -32,12 +33,13 @@ export default defineConfig({
     sidebar: {
       '/posts/': [
           {
-          text: '文章列表',
+          text: 'vitepress示例',
+          collapsed: true,
           items: [
-            { text: '我的第一篇博客', link: '/posts/my-first-post' },
-            { text: 'VitePress使用技巧', link: '/posts/vitepress-tips' },
-            { text: 'VitePress中的Markdown扩展功能', link: '/posts/markdown-extensions' },
-            { text: 'VitePress运行时API详解', link: '/posts/runtime-api-examples' }
+            { text: '我的第一篇博客', link: '/posts/vitepress/my-first-post' },
+            { text: 'VitePress使用技巧', link: '/posts/vitepress/vitepress-tips' },
+            { text: 'VitePress中的Markdown扩展功能', link: '/posts/vitepress/markdown-extensions' },
+            { text: 'VitePress运行时API详解', link: '/posts/vitepress/runtime-api-examples' }
           ]
         }
       ]
