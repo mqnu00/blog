@@ -25,7 +25,14 @@ export default defineConfig({
         const title = token.attrGet('title') || ''
 
         // 这里替换成 n-image
-        return `<n-image src="${src}" alt="${alt}" title="${title}" />`
+        return `<ClientOnly><n-image src="${src}" alt="${alt}"/></ClientOnly>`
+      }
+    }
+  },
+  vue: {
+    template: {
+      transformAssetUrls: {
+        'n-image': ['src']
       }
     }
   },
