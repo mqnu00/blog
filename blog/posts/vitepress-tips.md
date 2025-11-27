@@ -14,7 +14,8 @@ tags: [技术分享, VitePress, Markdown]
 VitePress提供了丰富的Markdown扩展功能：
 
 ### 代码块高亮
-\`\`\`js
+````
+```js
 export default {
   name: "MyComponent",
   data() {
@@ -23,7 +24,8 @@ export default {
     }
   }
 }
-\`\`\`
+```
+````
 
 ### 自定义容器
 ::: tip
@@ -35,7 +37,8 @@ export default {
 :::
 
 ### 代码行高亮
-\`\`\`js{4}
+````
+```js{4}
 export default {
   data() {
     return {
@@ -43,7 +46,8 @@ export default {
     }
   }
 }
-\`\`\`
+```
+````
 
 ## 主题定制
 
