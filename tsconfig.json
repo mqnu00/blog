@@ -3,7 +3,7 @@
     /* 基础设置 */
     "target": "ESNext",                // 输出的 JS 版本
     "module": "ESNext",                // 使用 ES 模块
-    "moduleResolution": "node",        // Node 风格的模块解析
+    "moduleResolution": "nodenext",        // Node 风格的模块解析
     "strict": true,                    // 开启严格模式
     "jsx": "preserve",                 // 保留 JSX（如果你用 Vue/React）
 
