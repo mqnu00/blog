@@ -1,7 +1,7 @@
-<script setup>
+<script setup lang="ts">
 import DefaultTheme from 'vitepress/theme'
 import { useData } from 'vitepress'
-import dayjs from 'dayjs'
+// import dayjs from 'dayjs'
 import { NTag } from 'naive-ui'
 
 const { page, frontmatter } = useData()
