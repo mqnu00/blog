@@ -27,17 +27,4 @@ features:
     details: 读书笔记和技术学习总结
 ---
 
-## 最近文章
-
-- [我的第一篇博客](/posts/my-first-post)
-- [VitePress使用技巧](/posts/vitepress-tips)
-- [VitePress中的Markdown扩展功能](/posts/markdown-extensions)
-- [VitePress运行时API详解](/posts/runtime-api-examples)
-
-## 相关页面
-
-- [博客文章](/posts/)
-- [关于我](/about)
-- [GitHub](https://github.com/your-username)
-
 
