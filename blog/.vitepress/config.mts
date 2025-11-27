@@ -2,13 +2,33 @@ import { defineConfig } from 'vitepress'
 import Components from 'unplugin-vue-components/vite'
 import { NaiveUiResolver } from 'unplugin-vue-components/resolvers'
 import AutoImport from 'unplugin-auto-import/vite'
+import type {MarkdownRenderer} from 'vitepress'
 
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
   base: '/blog/',
   title: "广习习的博客",
   description: "分享技术与生活的个人博客",
-  lastUpdated: true,
+  markdown: {
+    config: (md: MarkdownRenderer) => {
+      // 保存默认的 image 渲染
+      const defaultRender =
+        md.renderer.rules.image ||
+        function (tokens, idx, options, env, self) {
+          return self.renderToken(tokens, idx, options)
+        }
+      // 替换 img 渲染
+      md.renderer.rules.image = (tokens, idx, options, env, self) => {
+        const token = tokens[idx]
+        const src = token.attrGet('src')
+        const alt = token.content || ''
+        const title = token.attrGet('title') || ''
+
+        // 这里替换成 n-image
+        return `<n-image src="${src}" alt="${alt}" title="${title}" />`
+      }
+    }
+  },
   vite: {
     server: {
       host: '0.0.0.0'
@@ -56,15 +76,22 @@ export default defineConfig({
     sidebar: {
       '/posts/': [
           {
-          text: 'vitepress示例',
-          collapsed: true,
-          items: [
-            { text: '我的第一篇博客', link: '/posts/vitepress/my-first-post' },
-            { text: 'VitePress使用技巧', link: '/posts/vitepress/vitepress-tips' },
-            { text: 'VitePress中的Markdown扩展功能', link: '/posts/vitepress/markdown-extensions' },
-            { text: 'VitePress运行时API详解', link: '/posts/vitepress/runtime-api-examples' }
-          ]
-        }
+            text: 'vitepress示例',
+            collapsed: true,
+            items: [
+              { text: '我的第一篇博客', link: '/posts/vitepress/my-first-post' },
+              { text: 'VitePress使用技巧', link: '/posts/vitepress/vitepress-tips' },
+              { text: 'VitePress中的Markdown扩展功能', link: '/posts/vitepress/markdown-extensions' },
+              { text: 'VitePress运行时API详解', link: '/posts/vitepress/runtime-api-examples' }
+            ]
+          },
+          {
+            text: '前端',
+            collapsed: false,
+            items: [
+              { text: '在win11开发兼容ie的网页', link: '/posts/frontend/develop-ie-win11/develop-ie-win11' },
+            ]
+          }
       ]
     },
 
