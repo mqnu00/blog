@@ -26,6 +26,13 @@ export default defineConfig({
         dts: '.vitepress/components.d.ts',
       }),
     ],
+    optimizeDeps: {
+      include: ['naive-ui'],                  // 防止预构建再拿 lib/
+    },
+    ssr: {
+      // SSR 阶段也强制 ESM，不再 external 它们
+      noExternal: ['naive-ui'],
+    },
   },
   head: [
     ['link', { rel: 'icon', href: '/blog/favicon.ico' }],
