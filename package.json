@@ -7,5 +7,9 @@
   "devDependencies": {
     "@types/node": "^24.10.1",
     "vitepress": "^1.6.4"
+  },
+  "dependencies": {
+    "dayjs": "^1.11.19",
+    "vue": "^3.5.25"
   }
 }

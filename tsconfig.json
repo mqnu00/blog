@@ -9,7 +9,7 @@
 
     /* 路径和类型 */
     "baseUrl": ".",                    // 项目根目录为基准
-    "types": ["vitepress", "node"],    // 引入 VitePress 和 Node 类型声明
+    "types": ["vitepress", "node", "vue"],    // 引入 VitePress 和 Node 类型声明
 
     /* 输出控制 */
     "esModuleInterop": true,           // 允许默认导入 CommonJS 模块
@@ -21,6 +21,7 @@
   "include": [
     "./blog/.vitepress/**/*",            // VitePress 配置文件
     "**/*.ts",                    // 文档里可能的 TS 文件
+    "./blog/.vitepress/**/*.vue",
     "**/*.d.ts"                   // 类型声明文件
   ],
   "exclude": [
