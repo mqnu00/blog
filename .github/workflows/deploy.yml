@@ -22,6 +22,9 @@ jobs:
       - name: Build VitePress site
         run: npm run docs:build
 
+      - name: List dist files
+        run: ls -R blog/.vitepress/dist
+
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
