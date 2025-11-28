@@ -72,7 +72,20 @@ export default defineConfig({
   themeConfig: {
     // https://vitepress.dev/reference/default-theme-config
     search: {
-      provider: 'local'
+      provider: 'local',
+      options: {
+        _render: (src, env, md) => {
+          const html = md.render(src, env)
+          if (env.frontmatter?.tags) {
+            const tags = env.frontmatter.tags as Array<string>
+            const title = env.frontmatter?.title as string | undefined
+            
+            // 插入到内容最前面，确保被索引
+            return  md.render(`# ${title ? title + ' > ' : ''} tags: ${tags.join(' ')}`) + html
+          }
+          return html
+        }
+      }
     },
     outline: {
       level: [1, 6], // 显示 h2 和 h3 标题
