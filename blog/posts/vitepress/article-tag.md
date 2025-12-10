@@ -1,8 +1,8 @@
 ---
-title: 如何给文章添加tag并支持被VitePress自带的本地搜索索引
+title: 给文章添加tag并支持搜索索引
 date: 2025-12-10 15:19
 author: 广习习
-tags: [技术分享, VitePress]
+tags: [技术分享, VitePress, render]
 ---
 
 # 添加TAG
@@ -77,3 +77,5 @@ search: {
       }
     },
 ```
+
+不过有个缺点是 dev 模式不会因为 md 元数据修改而重新生成搜索索引
