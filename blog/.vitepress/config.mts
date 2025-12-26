@@ -104,6 +104,7 @@ export default defineConfig({
             collapsed: false,
             items: [
               { text: '在win11开发兼容ie的网页', link: '/posts/frontend/develop-ie-win11/develop-ie-win11' },
+              { text: '最近开发时遇到的问题(var和async)', link: '/posts/frontend/problem-for-var-and-async/problem-for-var-and-async' },
             ]
           },
           {
