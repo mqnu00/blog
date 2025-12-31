@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0">
+    <channel>
+        <title>广习习的博客</title>
+        <link>https://mqnu00.github.io/blog/</link>
+        <description>分享技术与生活的个人博客</description>
+        <lastBuildDate>Wed, 31 Dec 2025 07:06:53 GMT</lastBuildDate>
+        <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
+        <generator>https://github.com/jpmonette/feed</generator>
+        <language>en-US</language>
+        <copyright>© 2025 广习习</copyright>
+        <item>
+            <title><![CDATA[在win11开发兼容ie的网页]]></title>
+            <link>https://mqnu00.github.io/blog//posts/frontend/develop-ie-win11/develop-ie-win11.html</link>
+            <guid isPermaLink="false">https://mqnu00.github.io/blog//posts/frontend/develop-ie-win11/develop-ie-win11.html</guid>
+            <pubDate>Thu, 27 Nov 2025 11:29:00 GMT</pubDate>
+            <description><![CDATA[
+# 目标是什么
+
+这里指的是语法的兼容，目标版本是ie8。我平时语法用到的比如
+
+- `Arrow functions () => {}` 
+- `Optional chaining operator (?.)`
+
+![](./pic/b]]></description>
+        </item>
+        <item>
+            <title><![CDATA[最近开发时遇到的问题(var和async)]]></title>
+            <link>https://mqnu00.github.io/blog//posts/frontend/problem-for-var-and-async/problem-for-var-and-async.html</link>
+            <guid isPermaLink="false">https://mqnu00.github.io/blog//posts/frontend/problem-for-var-and-async/problem-for-var-and-async.html</guid>
+            <pubDate>Fri, 26 Dec 2025 17:16:00 GMT</pubDate>
+            <description><![CDATA[
+# 环境
+
+注意环境是ie8，常用的现代浏览器的语法是没有的，比如：
+
+- let，const([es6开始支持](https://www.w3schools.com/JS/js_let.asp?utm_source=copilot.co]]></description>
+        </item>
+        <item>
+            <title><![CDATA[给文章添加tag并支持搜索索引]]></title>
+            <link>https://mqnu00.github.io/blog//posts/vitepress/article-tag.html</link>
+            <guid isPermaLink="false">https://mqnu00.github.io/blog//posts/vitepress/article-tag.html</guid>
+            <pubDate>Wed, 10 Dec 2025 15:19:00 GMT</pubDate>
+            <description><![CDATA[
+# 添加TAG
+
+文档的元数据可以通过`-- --`在文档开头标识。
+
+类似于：
+``` 
+---
+title: 如何给文章添加tag并支持被VitePress自带的本地搜索索引
+date: 2025-12-10 15:19
+author]]></description>
+        </item>
+        <item>
+            <title><![CDATA[VitePress中的Markdown扩展功能]]></title>
+            <link>https://mqnu00.github.io/blog//posts/vitepress/markdown-extensions.html</link>
+            <guid isPermaLink="false">https://mqnu00.github.io/blog//posts/vitepress/markdown-extensions.html</guid>
+            <pubDate>Fri, 17 Jan 2025 00:00:00 GMT</pubDate>
+            <description><![CDATA[
+# VitePress中的Markdown扩展功能
+
+在使用VitePress搭建博客时，了解其内置的Markdown扩展功能是非常有帮助的。本文将详细介绍一些常用的扩展功能。
+
+## 语法高亮
+
+VitePress提供由 [Shiki]]]></description>
+        </item>
+        <item>
+            <title><![CDATA[我的第一篇博客]]></title>
+            <link>https://mqnu00.github.io/blog//posts/vitepress/my-first-post.html</link>
+            <guid isPermaLink="false">https://mqnu00.github.io/blog//posts/vitepress/my-first-post.html</guid>
+            <pubDate>Wed, 15 Jan 2025 00:00:00 GMT</pubDate>
+            <description><![CDATA[
+# 我的第一篇博客
+
+## 为什么选择VitePress
+
+VitePress是一个极简的静态站点生成器，它基于Vue 3和Vite，具有以下优点：
+
+- 快速的热更新
+- 极小的打包体积
+- 优秀的Markdown支持
+- 友好的主题定]]></description>
+        </item>
+        <item>
+            <title><![CDATA[VitePress运行时API详解]]></title>
+            <link>https://mqnu00.github.io/blog//posts/vitepress/runtime-api-examples.html</link>
+            <guid isPermaLink="false">https://mqnu00.github.io/blog//posts/vitepress/runtime-api-examples.html</guid>
+            <pubDate>Sat, 18 Jan 2025 00:00:00 GMT</pubDate>
+            <description><![CDATA[
+# VitePress运行时API详解
+
+本文将详细介绍VitePress提供的运行时API，这些API可以帮助我们更好地控制页面行为和获取站点数据。
+
+## useData() API
+
+`useData()` 是VitePress提供]]></description>
+        </item>
+        <item>
+            <title><![CDATA[VitePress使用技巧]]></title>
+            <link>https://mqnu00.github.io/blog//posts/vitepress/vitepress-tips.html</link>
+            <guid isPermaLink="false">https://mqnu00.github.io/blog//posts/vitepress/vitepress-tips.html</guid>
+            <pubDate>Thu, 16 Jan 2025 00:00:00 GMT</pubDate>
+            <description><![CDATA[
+# VitePress使用技巧
+
+在这篇文章中，我想分享一些使用VitePress的实用技巧。
+
+## Markdown扩展功能
+
+VitePress提供了丰富的Markdown扩展功能：
+
+### 代码块高亮
+````
+```js
+ex]]></description>
+        </item>
+    </channel>
+</rss>
