@@ -4,7 +4,7 @@
         <title>广习习的博客</title>
         <link>https://mqnu00.github.io/blog/</link>
         <description>分享技术与生活的个人博客</description>
-        <lastBuildDate>Wed, 31 Dec 2025 07:06:53 GMT</lastBuildDate>
+        <lastBuildDate>Wed, 31 Dec 2025 09:38:57 GMT</lastBuildDate>
         <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
         <generator>https://github.com/jpmonette/feed</generator>
         <language>en-US</language>
@@ -35,6 +35,22 @@
 注意环境是ie8，常用的现代浏览器的语法是没有的，比如：
 
 - let，const([es6开始支持](https://www.w3schools.com/JS/js_let.asp?utm_source=copilot.co]]></description>
+        </item>
+        <item>
+            <title><![CDATA[2025总结]]></title>
+            <link>https://mqnu00.github.io/blog//posts/summary/2025总结.html</link>
+            <guid isPermaLink="false">https://mqnu00.github.io/blog//posts/summary/2025总结.html</guid>
+            <pubDate>Wed, 31 Dec 2025 16:55:00 GMT</pubDate>
+            <description><![CDATA[
+# 时间线
+
+2月，离开实习公司，在杭州待了2个月左右，准备春招面试。
+
+4月，春招结尾，收到了1份offer。由于实习公司的经历+春招的打击，我对自己不是很自信，决定提前实习了解一下这个公司。
+
+5月，劳动节假期过后开始实习
+
+6月，请]]></description>
         </item>
         <item>
             <title><![CDATA[给文章添加tag并支持搜索索引]]></title>
