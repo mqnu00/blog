@@ -150,6 +150,13 @@ export default defineConfig({
             ]
           },
           {
+            text: '总结',
+            collapsed: true,
+            items: [
+              { text: '2025总结.md', link: '/posts/summary/2025总结.md' },
+            ]
+          },
+          {
             text: 'vitepress示例',
             collapsed: true,
             items: [
