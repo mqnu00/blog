@@ -3,6 +3,10 @@ import Components from 'unplugin-vue-components/vite'
 import { NaiveUiResolver } from 'unplugin-vue-components/resolvers'
 import AutoImport from 'unplugin-auto-import/vite'
 import type {MarkdownRenderer} from 'vitepress'
+import {Feed} from 'feed'
+import fs from 'fs/promises'
+import path from 'path'
+import matter from 'gray-matter'
 
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
@@ -28,6 +32,44 @@ export default defineConfig({
         return `<ClientOnly><n-image src="${src}" alt="${alt}"/></ClientOnly>`
       }
     }
+  },
+  async buildEnd(siteConfig) {
+    var baseUrl = 'https://mqnu00.github.io/blog/'
+    const feed = new Feed({
+      title: siteConfig.site.title,
+      description: siteConfig.site.description,
+      id: baseUrl,
+      link: baseUrl,
+      language: siteConfig.site.lang,
+      copyright: '© 2025 广习习'
+    })
+    
+    const pageRoot = path.resolve(__dirname, '..')
+    // 遍历所有页面
+    for (const page of siteConfig.pages) {
+      if (!page.startsWith('posts/')) continue
+
+      const filePath = path.join(pageRoot, page)
+      const file = await fs.readFile(filePath, 'utf-8')
+      const { data, content } = matter(file)
+
+      if (!data.title) continue
+      if (data.publish === false) continue
+
+      const url = `${baseUrl}/${page.replace('.md', '.html')}`
+
+      feed.addItem({
+        title: data.title,
+        id: url,
+        link: url,
+        description: data.description || content.slice(0, 120),
+        date: data.date ? new Date(data.date) : new Date(),
+      })
+    }
+
+    const outDir = siteConfig.outDir
+    await fs.writeFile(path.join(outDir, 'rss.xml'), feed.rss2(), 'utf-8')
+
   },
   vue: {
     template: {
@@ -122,12 +164,13 @@ export default defineConfig({
     },
 
     socialLinks: [
-      { icon: 'github', link: 'https://github.com/your-username' }
+      { icon: 'github', link: 'https://github.com/mqnu00' },
+      { icon: 'rss', link: '/blog/rss.xml' }
     ],
 
     footer: {
       message: 'Released under the MIT License.',
-      copyright: 'Copyright © 2023-present 广习习'
+      copyright: 'Copyright © 2025-present 广习习'
     }
   }
 })
