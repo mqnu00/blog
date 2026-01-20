@@ -7,6 +7,7 @@ import {Feed} from 'feed'
 import fs from 'fs/promises'
 import path from 'path'
 import matter from 'gray-matter'
+import {load} from 'cheerio'
 
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
@@ -52,6 +53,17 @@ export default defineConfig({
       const filePath = path.join(pageRoot, page)
       const file = await fs.readFile(filePath, 'utf-8')
       const { data, content } = matter(file)
+      const htmlPath = path.join(siteConfig.outDir, page.replace('.md', '.html'))
+      const html = await fs.readFile(htmlPath, 'utf-8')
+
+      const $ = load(html)
+      // 删除所有 class / id / style 
+      // $('[class]').removeAttr('class') 
+      // $('[id]').removeAttr('id') 
+      $('[style]').removeAttr('style') 
+      // 删除不需要的标签 
+      // $('script, style, link, meta, nav, footer').remove()
+
 
       if (!data.title) continue
       if (data.publish === false) continue
@@ -62,7 +74,8 @@ export default defineConfig({
         title: data.title,
         id: url,
         link: url,
-        description: data.description || content.slice(0, 120),
+        description: data.description,
+        content: $('.vp-doc').html() || '',
         date: data.date ? new Date(data.date) : new Date(),
       })
     }
