@@ -4,7 +4,7 @@
         <title>广习习的博客</title>
         <link>https://mqnu00.github.io/blog/</link>
         <description>分享技术与生活的个人博客</description>
-        <lastBuildDate>Tue, 20 Jan 2026 08:24:53 GMT</lastBuildDate>
+        <lastBuildDate>Thu, 05 Feb 2026 07:51:35 GMT</lastBuildDate>
         <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
         <generator>https://github.com/jpmonette/feed</generator>
         <language>en-US</language>
@@ -286,7 +286,19 @@
   },
   "headers": [],
   "relativePath": "posts/vitepress/runtime-api-examples.md",
-  "filePath": "posts/vitepress/runtime-api-examples.md"
+  "filePath": "posts/vitepress/runtime-api-examples.md",
+  "git": {
+    "updated": "2025-11-27T02:20:16Z",
+    "history": [
+      {
+        "sha": "730a7d117141f9fc9106caec61861070e057affd",
+        "author": "mqnu00",
+        "date": "2025-11-27T02:20:16Z",
+        "message": "refactor: 配置文章结构",
+        "url": "https://github.com/mqnu00/blog/commit/730a7d117141f9fc9106caec61861070e057affd"
+      }
+    ]
+  }
 }</pre><h3 id="页面frontmatter" tabindex="-1">页面Frontmatter <a class="header-anchor" href="#页面frontmatter" aria-label="Permalink to &quot;页面Frontmatter&quot;">​</a></h3><pre>{
   "title": "VitePress运行时API详解",
   "date": "2025-01-18T00:00:00.000Z",
