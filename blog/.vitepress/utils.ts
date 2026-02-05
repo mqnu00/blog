@@ -22,7 +22,6 @@ export async function getGithubHistory({
   token
 }: GithubHistoryOptions): Promise<GithubCommitItem[]> {
   const url = `https://api.github.com/repos/${owner}/${repo}/commits?path=${encodeURIComponent(filePath)}`
-  console.log(url)
 
   const headers: Record<string, string> = {
     'Accept': 'application/vnd.github+json'
