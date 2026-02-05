@@ -8,6 +8,7 @@ import fs from 'fs/promises'
 import path from 'path'
 import matter from 'gray-matter'
 import {load} from 'cheerio'
+import { getGithubHistory } from './utils.js'
 
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
@@ -83,6 +84,22 @@ export default defineConfig({
     const outDir = siteConfig.outDir
     await fs.writeFile(path.join(outDir, 'rss.xml'), feed.rss2(), 'utf-8')
 
+  },
+  async transformPageData(pageData) {
+
+    const githubPath = '/blog/' + pageData.filePath
+    const history = await getGithubHistory(
+      { 
+        owner: 'mqnu00', 
+        repo: 'blog', 
+        filePath: githubPath, 
+        token: process.env.GITHUB_TOKEN 
+      }
+    )
+    pageData.git = { 
+      updated: history[0]?.date ?? null, 
+      history 
+    }
   },
   vue: {
     template: {
