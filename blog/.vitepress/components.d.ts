@@ -11,7 +11,8 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
-    NH1: typeof import('naive-ui')['NH1']
-    NTag: typeof import('naive-ui')['NTag']
+    NCollapse: typeof import('naive-ui')['NCollapse']
+    NCollapseItem: typeof import('naive-ui')['NCollapseItem']
+    NTime: typeof import('naive-ui')['NTime']
   }
 }
