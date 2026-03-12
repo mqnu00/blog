@@ -10,8 +10,6 @@ import matter from 'gray-matter'
 import {load} from 'cheerio'
 import { getGithubHistory } from './utils/github/gitHistory.js'
 
-const env = loadEnv(process.env.NODE_ENV || 'development', process.cwd(), 'VITE_')
-
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
   base: '/blog/',
@@ -148,9 +146,6 @@ export default defineConfig({
     ['meta', { property: 'og:type', content: 'website' }],
     ['meta', { property: 'og:site_name', content: '广习习的博客' }],
     ['meta', { name: 'twitter:card', content: 'summary_large_image' }],
-    ['script', { type: 'text/javascript' }, `
-      window.__ENV__ = ${JSON.stringify(env)};
-    `]
   ],
   themeConfig: {
     // https://vitepress.dev/reference/default-theme-config
