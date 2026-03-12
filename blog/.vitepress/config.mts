@@ -1,14 +1,16 @@
-import { defineConfig } from 'vitepress'
+import { defineConfig, loadEnv } from 'vitepress'
 import Components from 'unplugin-vue-components/vite'
 import { NaiveUiResolver } from 'unplugin-vue-components/resolvers'
 import AutoImport from 'unplugin-auto-import/vite'
 import type {MarkdownRenderer} from 'vitepress'
 import {Feed} from 'feed'
 import fs from 'fs/promises'
-import path from 'path'
+import path, { resolve } from 'node:path'
 import matter from 'gray-matter'
 import {load} from 'cheerio'
-import { getGithubHistory } from './utils.js'
+import { getGithubHistory } from './utils/github/gitHistory.js'
+
+const env = loadEnv(process.env.NODE_ENV || 'development', process.cwd(), 'VITE_')
 
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
@@ -109,8 +111,14 @@ export default defineConfig({
     }
   },
   vite: {
+    resolve: {
+      alias: {
+        '@blog': resolve(__dirname, '..')
+      }
+    },
     server: {
-      host: '0.0.0.0'
+      host: '0.0.0.0',
+      allowedHosts: ['mqnu00.github.io']
     },
     plugins: [
       // 自动导入 Vue API（ref、computed 等）
@@ -139,7 +147,10 @@ export default defineConfig({
     ['meta', { name: 'keywords', content: '技术博客, Vue, VitePress, 前端开发, JavaScript' }],
     ['meta', { property: 'og:type', content: 'website' }],
     ['meta', { property: 'og:site_name', content: '广习习的博客' }],
-    ['meta', { name: 'twitter:card', content: 'summary_large_image' }]
+    ['meta', { name: 'twitter:card', content: 'summary_large_image' }],
+    ['script', { type: 'text/javascript' }, `
+      window.__ENV__ = ${JSON.stringify(env)};
+    `]
   ],
   themeConfig: {
     // https://vitepress.dev/reference/default-theme-config
@@ -208,6 +219,11 @@ export default defineConfig({
     footer: {
       message: 'Released under the MIT License.',
       copyright: 'Copyright © 2025-present 广习习'
+    },
+
+    docFooter: {
+      prev: false,
+      next: false
     }
   }
 })
