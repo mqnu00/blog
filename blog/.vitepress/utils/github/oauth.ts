@@ -61,8 +61,8 @@ export class GithubOauthClient {
     return `https://github.com/login/oauth/authorize?${params.toString()}`
   }
 
-  async handleCallback (code: string) {
-    const res = await fetch(`https://noisy-wood-098b.mqnu000.workers.dev/oauth/token?code=${code}`)
+  async handleCallback (code: string, client_id: string, redirect_uri: string) {
+    const res = await fetch(`https://noisy-wood-098b.mqnu000.workers.dev/oauth/token?code=${code}&client_id=${client_id}&redirect_uri=${redirect_uri}`)
     const data: GithubAccessTokenResponse = await res.json()
     return data
   }
