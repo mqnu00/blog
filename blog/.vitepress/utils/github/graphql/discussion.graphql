@@ -58,3 +58,27 @@ query GetDiscussionCommentReply($commentId: ID!, $first: Int = 40, $after: Strin
     }
 }
 
+mutation CreateDiscussion(
+    $repositoryId: ID!
+    $title: String!
+    $body: String!
+    $categoryId: ID!
+) {
+    createDiscussion(
+        input: {
+            repositoryId: $repositoryId
+            title: $title
+            body: $body
+            categoryId: $categoryId
+        }
+    ) {
+        discussion {
+            id
+            number
+            title
+            url
+            createdAt
+        }
+    }
+}
+

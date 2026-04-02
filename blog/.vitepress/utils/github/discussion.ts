@@ -5,16 +5,19 @@ export class GithubDiscussApi {
     private sdk;
     private readonly owner: string;
     private readonly repo: string;
+    private readonly repoId: string;
 
     constructor(
         token: string,
         owner: string,
         repo: string,
+        repoId: string,
         proxyUrl?: string
     ) {
         this.sdk = getSdk(createGithubClient(token, proxyUrl));
         this.owner = owner;
         this.repo = repo;
+        this.repoId = repoId;
     }
 
     async getDiscussionCount() {
@@ -122,6 +125,22 @@ export class GithubDiscussApi {
         return finalRes.node?.replies?.nodes ?? [];
     }
 
+    async createDiscussion(
+        title: string,
+        body: string,
+        categoryId: string
+    ) {
+
+        // 创建 Discussion
+        const res = await this.sdk.CreateDiscussion({
+            repositoryId: this.repoId,
+            title,
+            body,
+            categoryId,
+        });
+
+        return res.createDiscussion?.discussion ?? null;
+    }
 
 
 }
