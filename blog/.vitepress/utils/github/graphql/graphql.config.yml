@@ -21,3 +21,5 @@ extensions:
           - typescript-graphql-request
         config:
           withHooks: true
+          skipTypename: true
+          avoidOptionals: true
