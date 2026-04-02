@@ -22,7 +22,7 @@ import { GithubOauthClient } from '@blog/.vitepress/utils/github/oauth'
 
 const isProcessing = ref(true)
 // 测试配置
-const isDev = typeof window !== 'undefined' && window.__ENV__.IsDev;
+const isDev = import.meta.env.DEV;
 
 onMounted(async () => {
   const params = new URLSearchParams(window.location.search)
