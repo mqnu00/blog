@@ -35789,6 +35789,16 @@ export type GetDiscussionCommentReplyQuery = { node:
     | Record<PropertyKey, never>
    | null };
 
+export type CreateDiscussionMutationVariables = Exact<{
+  repositoryId: Scalars['ID']['input'];
+  title: Scalars['String']['input'];
+  body: Scalars['String']['input'];
+  categoryId: Scalars['ID']['input'];
+}>;
+
+
+export type CreateDiscussionMutation = { createDiscussion: { discussion: { id: string, number: number, title: string, url: any, createdAt: any } | null } | null };
+
 export type GetUserInfoQueryVariables = Exact<{
   login: Scalars['String']['input'];
 }>;
@@ -35860,6 +35870,21 @@ export const GetDiscussionCommentReplyDocument = gql`
   }
 }
     `;
+export const CreateDiscussionDocument = gql`
+    mutation CreateDiscussion($repositoryId: ID!, $title: String!, $body: String!, $categoryId: ID!) {
+  createDiscussion(
+    input: {repositoryId: $repositoryId, title: $title, body: $body, categoryId: $categoryId}
+  ) {
+    discussion {
+      id
+      number
+      title
+      url
+      createdAt
+    }
+  }
+}
+    `;
 export const GetUserInfoDocument = gql`
     query GetUserInfo($login: String!) {
   user(login: $login) {
@@ -35894,6 +35919,9 @@ export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = 
     },
     GetDiscussionCommentReply(variables: GetDiscussionCommentReplyQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<GetDiscussionCommentReplyQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<GetDiscussionCommentReplyQuery>({ document: GetDiscussionCommentReplyDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'GetDiscussionCommentReply', 'query', variables);
+    },
+    CreateDiscussion(variables: CreateDiscussionMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<CreateDiscussionMutation> {
+      return withWrapper((wrappedRequestHeaders) => client.request<CreateDiscussionMutation>({ document: CreateDiscussionDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'CreateDiscussion', 'mutation', variables);
     },
     GetUserInfo(variables: GetUserInfoQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<GetUserInfoQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<GetUserInfoQuery>({ document: GetUserInfoDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'GetUserInfo', 'query', variables);
