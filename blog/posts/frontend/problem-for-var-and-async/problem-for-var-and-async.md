@@ -1,8 +1,13 @@
 ---
 title: 最近开发时遇到的问题(var和async)
-date: 2025-12-26 17:16
+date: '2025-12-26 17:16'
 author: 广习习
-tags: [ie8, 语法, 兼容]
+tags:
+  - ie8
+  - 语法
+  - 兼容
+url: >-
+  https://mqnu00.github.io/blog/posts/frontend/problem-for-var-and-async/problem-for-var-and-async.html
 ---
 
 # 环境

@@ -1,8 +1,12 @@
 ---
 title: 给文章添加tag并支持搜索索引
-date: 2025-12-10 15:19
+date: '2025-12-10 15:19'
 author: 广习习
-tags: [技术分享, VitePress, render]
+tags:
+  - 技术分享
+  - VitePress
+  - render
+url: 'https://mqnu00.github.io/blog/posts/vitepress/article-tag.html'
 ---
 
 # 添加TAG

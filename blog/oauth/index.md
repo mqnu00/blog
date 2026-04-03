@@ -1,6 +1,9 @@
 ---
-# 禁用所有主题样式，提供一个空白画布
 layout: false
+git:
+  updated: null
+  history: []
+url: 'https://mqnu00.github.io/blog/oauth/index.html'
 ---
 
 <script setup>

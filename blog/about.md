@@ -1,3 +1,6 @@
+---
+url: 'https://mqnu00.github.io/blog/about.html'
+---
 # 关于我
 
 欢迎来到我的博客！我是一个热爱技术的开发者，喜欢分享自己的学习和实践经验。

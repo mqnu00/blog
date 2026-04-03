@@ -1,3 +1,6 @@
+---
+url: 'https://mqnu00.github.io/blog/posts/index.html'
+---
 # 博客文章
 
 ## 最新文章

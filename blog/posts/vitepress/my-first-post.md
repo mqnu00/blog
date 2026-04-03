@@ -1,8 +1,12 @@
 ---
 title: 我的第一篇博客
-date: 2025-01-15
+date: 2025-01-15T00:00:00.000Z
 author: 广习习
-tags: [技术分享, Vue, VitePress]
+tags:
+  - 技术分享
+  - Vue
+  - VitePress
+url: 'https://mqnu00.github.io/blog/posts/vitepress/my-first-post.html'
 ---
 
 # 我的第一篇博客
