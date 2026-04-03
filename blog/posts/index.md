@@ -1,5 +1,11 @@
 ---
 url: 'https://mqnu00.github.io/blog/posts/index.html'
+discussion:
+  id: D_kwDOQdT3Qc4Alcvf
+  number: 31
+  title: 博客文章
+  url: 'https://github.com/mqnu00/blog/discussions/31'
+  createdAt: '2026-04-03T02:47:44Z'
 ---
 # 博客文章
 

@@ -1,5 +1,11 @@
 ---
 url: 'https://mqnu00.github.io/blog/about.html'
+discussion:
+  id: D_kwDOQdT3Qc4Alcvi
+  number: 32
+  title: 关于我
+  url: 'https://github.com/mqnu00/blog/discussions/32'
+  createdAt: '2026-04-03T02:47:48Z'
 ---
 # 关于我
 

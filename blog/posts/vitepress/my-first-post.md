@@ -7,6 +7,12 @@ tags:
   - Vue
   - VitePress
 url: 'https://mqnu00.github.io/blog/posts/vitepress/my-first-post.html'
+discussion:
+  id: D_kwDOQdT3Qc4Alcvk
+  number: 34
+  title: 我的第一篇博客
+  url: 'https://github.com/mqnu00/blog/discussions/34'
+  createdAt: '2026-04-03T02:47:50Z'
 ---
 
 # 我的第一篇博客
