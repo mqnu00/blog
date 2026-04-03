@@ -1,5 +1,5 @@
 import { getSdk } from "../github/graphql/github";
-import {createGithubClient} from "@blog/.vitepress/utils/github/index";
+import {createGithubClient} from "./index";
 
 export class GithubDiscussApi {
     private sdk;
