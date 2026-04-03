@@ -1,14 +1,28 @@
-import { defineConfig, loadEnv } from 'vitepress'
-import Components from 'unplugin-vue-components/vite'
-import { NaiveUiResolver } from 'unplugin-vue-components/resolvers'
-import AutoImport from 'unplugin-auto-import/vite'
 import type {MarkdownRenderer} from 'vitepress'
+import {defineConfig} from 'vitepress'
+import Components from 'unplugin-vue-components/vite'
+import {NaiveUiResolver} from 'unplugin-vue-components/resolvers'
+import AutoImport from 'unplugin-auto-import/vite'
 import {Feed} from 'feed'
 import fs from 'fs/promises'
-import path, { resolve } from 'node:path'
+import path, {resolve} from 'node:path'
 import matter from 'gray-matter'
 import {load} from 'cheerio'
-import { getGithubHistory } from './utils/github/gitHistory.js'
+import {getGithubHistory} from './utils/github/gitHistory.js'
+import dotenv from "dotenv";
+import {GithubDiscussApi} from "./utils/github/discussion"
+
+const mode = process.env.NODE_ENV || 'development'
+dotenv.config({
+  path: path.resolve(process.cwd(), `./blog/.env.${mode}`)
+})
+const discussClient = new GithubDiscussApi(
+    process.env.GITHUB_TOKEN,
+    process.env.VITE_GITHUB_DISCUSS_OWNER,
+    process.env.VITE_GITHUB_DISCUSS_REP,
+    process.env.VITE_GITHUB_REPO_ID,
+    process.env.Local === '1' ? process.env.VITE_GITHUB_PROXY : null
+)
 
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
@@ -86,7 +100,7 @@ export default defineConfig({
 
   },
   async transformPageData(pageData) {
-
+    var baseUrl = 'https://mqnu00.github.io/blog'
     const githubPath = '/blog/' + pageData.filePath
     const history = await getGithubHistory(
       { 
@@ -100,6 +114,41 @@ export default defineConfig({
       updated: history[0]?.date ?? null, 
       history 
     }
+
+    pageData.url = `${baseUrl}/${pageData.filePath.replace('.md', '.html')}`
+    //   配置讨论
+    if(pageData.frontmatter.discussion == null && pageData.title != null && pageData.title !== '') {
+      console.log(pageData.title)
+      const discuss = await discussClient.createDiscussion(
+          pageData.title,
+          pageData.url,
+          process.env.VITE_GITHUB_DISCUSS_TYPE_ID
+      )
+      if (discuss) {
+        pageData.frontmatter.discussion = discuss
+      } else {
+        throw new Error("创建讨论失败")
+      }
+    }
+
+    // -------------------------
+    // 写回 Markdown 文件
+    // -------------------------
+    const mdPath = path.resolve(process.cwd(), 'blog', pageData.filePath)
+    const raw = await fs.readFile(mdPath, 'utf-8')
+
+    const parsed = matter(raw)
+
+    // 写入 frontmatter
+    // parsed.data.git = pageData.git
+    parsed.data.url = pageData.url
+    if (pageData.discussion != null) parsed.data.discussion = pageData.frontmatter.discussion
+
+    // 重新生成 md 内容
+    const newContent = matter.stringify(parsed.content, parsed.data)
+
+    // 写回文件
+    await fs.writeFile(mdPath, newContent, 'utf-8')
   },
   vue: {
     template: {
