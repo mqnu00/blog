@@ -7,12 +7,6 @@ tags:
   - VitePress
   - Markdown
 url: 'https://mqnu00.github.io/blog/posts/vitepress/vitepress-tips.html'
-discussion:
-  id: D_kwDOQdT3Qc4Alcvn
-  number: 36
-  title: VitePress使用技巧
-  url: 'https://github.com/mqnu00/blog/discussions/36'
-  createdAt: '2026-04-03T02:47:55Z'
 ---
 
 # VitePress使用技巧
