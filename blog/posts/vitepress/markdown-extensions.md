@@ -7,6 +7,12 @@ tags:
   - Markdown
   - VitePress
 url: 'https://mqnu00.github.io/blog/posts/vitepress/markdown-extensions.html'
+discussion:
+  id: D_kwDOQdT3Qc4Alc3t
+  number: 61
+  title: VitePress中的Markdown扩展功能
+  url: 'https://github.com/mqnu00/blog/discussions/61'
+  createdAt: '2026-04-03T05:22:56Z'
 ---
 
 # VitePress中的Markdown扩展功能

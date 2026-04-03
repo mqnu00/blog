@@ -7,6 +7,12 @@ tags:
   - VitePress
   - render
 url: 'https://mqnu00.github.io/blog/posts/vitepress/article-tag.html'
+discussion:
+  id: D_kwDOQdT3Qc4Alc3s
+  number: 60
+  title: 给文章添加tag并支持搜索索引
+  url: 'https://github.com/mqnu00/blog/discussions/60'
+  createdAt: '2026-04-03T05:22:51Z'
 ---
 
 # 添加TAG

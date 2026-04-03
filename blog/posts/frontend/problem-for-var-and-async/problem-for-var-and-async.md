@@ -8,6 +8,12 @@ tags:
   - 兼容
 url: >-
   https://mqnu00.github.io/blog/posts/frontend/problem-for-var-and-async/problem-for-var-and-async.html
+discussion:
+  id: D_kwDOQdT3Qc4Alc3o
+  number: 56
+  title: 最近开发时遇到的问题(var和async)
+  url: 'https://github.com/mqnu00/blog/discussions/56'
+  createdAt: '2026-04-03T05:22:45Z'
 ---
 
 # 环境

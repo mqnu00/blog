@@ -8,6 +8,12 @@ tags:
   - API
 outline: deep
 url: 'https://mqnu00.github.io/blog/posts/vitepress/runtime-api-examples.html'
+discussion:
+  id: D_kwDOQdT3Qc4Alc3u
+  number: 62
+  title: VitePress运行时API详解
+  url: 'https://github.com/mqnu00/blog/discussions/62'
+  createdAt: '2026-04-03T05:22:56Z'
 ---
 
 # VitePress运行时API详解
