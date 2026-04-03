@@ -118,7 +118,7 @@ export default defineConfig({
     pageData.url = `${baseUrl}/${pageData.filePath.replace('.md', '.html')}`
     //   配置讨论
     if(pageData.frontmatter.discussion == null && pageData.title != null && pageData.title !== '') {
-      console.log(pageData.title)
+      console.log(`创建讨论： ${pageData.title}`)
       const discuss = await discussClient.createDiscussion(
           pageData.title,
           pageData.url,
@@ -142,7 +142,7 @@ export default defineConfig({
     // 写入 frontmatter
     // parsed.data.git = pageData.git
     parsed.data.url = pageData.url
-    if (pageData.discussion != null) parsed.data.discussion = pageData.frontmatter.discussion
+    if (pageData.frontmatter.discussion != null) parsed.data.discussion = pageData.frontmatter.discussion
 
     // 重新生成 md 内容
     const newContent = matter.stringify(parsed.content, parsed.data)
