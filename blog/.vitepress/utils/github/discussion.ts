@@ -108,7 +108,7 @@ export class GithubDiscussApi {
             });
 
             const replies = res.node?.replies;
-            if (!replies) return [];
+            if (!replies) return undefined;
 
             // 如果没有下一页，提前结束
             if (!replies.pageInfo.hasNextPage) break;
@@ -124,7 +124,7 @@ export class GithubDiscussApi {
             after,
         });
 
-        return finalRes.node?.replies?.nodes ?? [];
+        return finalRes.node?.replies;
     }
 
     async createDiscussion(

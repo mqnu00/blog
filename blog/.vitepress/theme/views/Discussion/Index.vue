@@ -23,7 +23,7 @@
   <div>
     <NStatistic label="评论数" :value="discussionList?.comments.totalCount" />
   </div>
-  <template v-for="discussion in discussionList?.comments.nodes">
+  <template v-for="(discussion, index) in discussionList?.comments.nodes">
     <NCard class="discussion">
       <template #header>
         <div style="display: flex; flex-direction: row; gap: 10px; font-size: 14px;">
@@ -41,11 +41,16 @@
         <p style="margin-left: 20px;">{{ discussion?.body }}</p>
       </template>
       <template #footer>
-        <NCollapse style="background-color: rgb(233 233 238); padding-left: 20px; padding-top: 10px; padding-bottom: 10px;">
-          <NCollapseItem title="回复" :name="`reply-${discussion?.id}`">
+        <NCollapse style="background-color: rgb(233 233 238); padding-left: 20px; padding-top: 10px; padding-bottom: 10px;" @item-header-click="expandReply">
+          <NCollapseItem title="回复" :name="index">
             <div>
-              <h1>111</h1>
-              <NTimeline/>
+              <NTimeline>
+                <template v-for="reply in discussion?.replies?.nodes">
+                  <NTimelineItem>
+                    {{ reply?.body }}
+                  </NTimelineItem>
+                </template>
+              </NTimeline>
             </div>
           </NCollapseItem>
         </NCollapse>
@@ -65,12 +70,13 @@
 </template>
 <script setup lang="ts">
 
-import type { CreateDiscussionMutation, GetDiscussionByNumberQuery, GetUserInfoQuery, Discussion } from "@blog/.vitepress/utils/github/graphql/github";
+import type { CreateDiscussionMutation, GetDiscussionByNumberQuery, GetUserInfoQuery, GetDiscussionCommentReplyQuery, Discussion } from "@blog/.vitepress/utils/github/graphql/github";
 import { GithubDiscussApi } from "@blog/.vitepress/utils/github/discussion";
-import { NAvatar, NDivider, NIcon, NPopover, NStatistic, NTimeline } from "naive-ui";
+import { CollapseItemHeaderSlotProps, CollapseItemProps, NAvatar, NDivider, NIcon, NPopover, NStatistic, NTimeline, NTimelineItem } from "naive-ui";
 import { GithubUserApi } from "@blog/.vitepress/utils/github/user";
 import {ChevronCircleDown20Regular} from '@vicons/fluent'
 import moment from "moment";
+import type {CollapseProps} from 'naive-ui'
 
 type DiscussionType = NonNullable<
   NonNullable<GetDiscussionByNumberQuery["repository"]>["discussion"]
@@ -82,7 +88,10 @@ type DiscussionWithUser = Omit<DiscussionType, 'comments'> & {
     nodes: Array<
       NonNullable<DiscussionType['comments']['nodes']>[0] & {
         userInfo?: GetUserInfoQuery["user"];
-        createDate?: Date
+        createDate?: Date;
+        startCount?: number;
+        limit?: number;
+        replies?: NonNullable<GetDiscussionCommentReplyQuery['node']>["replies"]
       } | null
     > | null;  // 保持可以为 null
   };
@@ -116,14 +125,32 @@ async function getDiscussionList() {
   discussionListLoading.value = false
   discussionList.value?.comments.nodes?.forEach(async (comment) => {
     if (comment) {
-      console.log(comment?.author?.login)
       comment.userInfo = await userClient.value?.getUserInfo(comment?.author?.login as string)
       comment.createDate = moment(comment.createdAt).toDate()
+      comment.startCount = 1;
+      comment.limit = 5;
     }
   })
   count.value = count.value + 1
   console.log(discussionList.value)
   loading.value = false
+}
+
+async function getDiscussionReply(whichOne: number) {
+  const comment = discussionList.value?.comments.nodes![whichOne]
+  const res = await discussClient.value?.getDiscussionComment(comment?.id!, (comment?.startCount ?? 0 - 1) * 5, comment?.limit)
+  if (comment && comment?.replies == null) {
+    comment.replies = res
+  } else {
+    comment?.replies!.nodes?.push(...res?.nodes!)
+  }
+}
+const expandReply: CollapseProps["onItemHeaderClick"] = (data) => {
+  if (data.expanded) {
+    if (discussionList.value?.comments.nodes![data.name]?.replies == null) {
+      getDiscussionReply(data.name)
+    }
+  }
 }
 
 onMounted(async () => {
