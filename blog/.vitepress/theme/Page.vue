@@ -55,8 +55,9 @@
             </NCollapseItem>
           </NCollapse>
         </div>
-        <div class="prev-next" v-if="page.git" style="display: flex; flex-direction: column; margin: 20px 0; gap: 10px;">
-          <NButton @click="githubOauth">github登录</NButton>
+        <div class="prev-next" style="display: flex; flex-direction: column; margin: 20px 0; gap: 10px;">
+          <NButton v-if="discussion != null && access_token == null" @click="githubOauth">github登录</NButton>
+          <Discussion v-else-if="discussion != null && access_token != null" :discussion="discussion"/>
         </div>
       </template>
     </DefaultTheme.Layout>
@@ -68,8 +69,13 @@ import { useData } from 'vitepress'
 // import dayjs from 'dayjs'
 import { dateZhCN, GlobalComponentConfig, GlobalThemeOverrides, NButton, NConfigProvider, NH1, NMessageProvider, NP, NTag, NTimeline, NTimelineItem, useMessage, zhCN } from 'naive-ui'
 import { GithubOauthClient } from '../utils/github/oauth.js'
-
+import type { CreateDiscussionMutation } from "@blog/.vitepress/utils/github/graphql/github"
+import Discussion from '@blog/.vitepress/theme/views/Discussion/Index.vue'
 const { page, frontmatter} = useData()
+const discussion = frontmatter.value.discussion as NonNullable<
+    NonNullable<CreateDiscussionMutation["createDiscussion"]>["discussion"]
+>
+const access_token: Ref<string | null> = ref(null)
 
 const message = useMessage()
 const env = import.meta.env
@@ -79,16 +85,21 @@ const client = new GithubOauthClient(
   env.VITE_GITHUB_CLIENT_ID
 )
 async function githubOauth () {
-  const access_token = localStorage.getItem('access_token')
-  if (access_token && access_token !== '') {
+  if (access_token.value && access_token.value !== '') {
     message.success("已登录！")
     return
   }
 
-  const url = client.createAuthorizationURL("public_repo")
+  const url = client.createAuthorizationURL("repo,read:user,read:discussion,write:discussion")
   sessionStorage.setItem("callback_blog_url", window.location.href)
   // 跳转 GitHub
   window.location.href = url
+}
+
+if (typeof window !== 'undefined') {
+  watch(() => localStorage.getItem('access_token'), (newVal: string) => {
+    access_token.value = newVal
+  }, {immediate: true})
 }
 </script>
 
@@ -97,14 +108,6 @@ async function githubOauth () {
   font-size: 0.9em;
   color: #888;
   margin-top: -0.5em;
-}
-
-.prev-next {
-  border-top: 1px solid var(--vp-c-divider);
-  padding-top: 24px;
-  margin-top: 32px;
-  display: flex;
-  justify-content: space-between;
 }
 
 </style>
