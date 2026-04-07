@@ -20,6 +20,8 @@ extensions:
           - typescript-operations
           - typescript-graphql-request
         config:
-          withHooks: true
           skipTypename: true
           avoidOptionals: true
+          immutableTypes: false
+          scalars:
+            DateTime: string

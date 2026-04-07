@@ -19,7 +19,7 @@ export type Scalars = {
   BigInt: { input: any; output: any; }
   CustomPropertyValue: { input: any; output: any; }
   Date: { input: any; output: any; }
-  DateTime: { input: any; output: any; }
+  DateTime: { input: string; output: string; }
   GitObjectID: { input: any; output: any; }
   GitRefname: { input: any; output: any; }
   GitSSHRemote: { input: any; output: any; }
@@ -27105,6 +27105,7 @@ export type RepositoryVulnerabilityAlertArgs = {
 export type RepositoryVulnerabilityAlertsArgs = {
   after: InputMaybe<Scalars['String']['input']>;
   before: InputMaybe<Scalars['String']['input']>;
+  classifications: InputMaybe<Array<SecurityAdvisoryClassification>>;
   dependencyScopes: InputMaybe<Array<RepositoryVulnerabilityAlertDependencyScope>>;
   first: InputMaybe<Scalars['Int']['input']>;
   last: InputMaybe<Scalars['Int']['input']>;
@@ -35757,13 +35758,13 @@ export type GetDiscussionByNumberQueryVariables = Exact<{
 }>;
 
 
-export type GetDiscussionByNumberQuery = { repository: { discussion: { id: string, number: number, title: string, body: string, createdAt: any, author:
+export type GetDiscussionByNumberQuery = { repository: { discussion: { id: string, number: number, title: string, body: string, createdAt: string, author:
         | { login: string }
         | { login: string }
         | { login: string }
         | { login: string }
         | { login: string }
-       | null, comments: { totalCount: number, pageInfo: { hasNextPage: boolean, endCursor: string | null }, nodes: Array<{ id: string, body: string, createdAt: any, author:
+       | null, comments: { totalCount: number, pageInfo: { hasNextPage: boolean, endCursor: string | null }, nodes: Array<{ id: string, body: string, createdAt: string, author:
             | { login: string }
             | { login: string }
             | { login: string }
@@ -35779,7 +35780,7 @@ export type GetDiscussionCommentReplyQueryVariables = Exact<{
 
 
 export type GetDiscussionCommentReplyQuery = { node:
-    | { replies: { totalCount: number, nodes: Array<{ body: string, createdAt: any, url: any, author:
+    | { replies: { totalCount: number, nodes: Array<{ body: string, createdAt: string, url: any, author:
             | { login: string }
             | { login: string }
             | { login: string }
@@ -35797,7 +35798,7 @@ export type CreateDiscussionMutationVariables = Exact<{
 }>;
 
 
-export type CreateDiscussionMutation = { createDiscussion: { discussion: { id: string, number: number, title: string, url: any, createdAt: any } | null } | null };
+export type CreateDiscussionMutation = { createDiscussion: { discussion: { id: string, number: number, title: string, url: any, createdAt: string } | null } | null };
 
 export type GetUserInfoQueryVariables = Exact<{
   login: Scalars['String']['input'];
