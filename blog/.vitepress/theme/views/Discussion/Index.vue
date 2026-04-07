@@ -24,7 +24,7 @@
     <NStatistic label="评论数" :value="discussionList?.comments.totalCount" />
   </div>
   <template v-for="discussion in discussionList?.comments.nodes">
-    <NCard>
+    <NCard class="discussion">
       <template #header>
         <div style="display: flex; flex-direction: row; gap: 10px; font-size: 14px;">
           <NAvatar round size="small" :src="discussion?.userInfo?.avatarUrl"/>
@@ -38,18 +38,38 @@
         </div>
       </template>
       <template #default>
-        <p>{{ discussion?.body }}</p>
+        <p style="margin-left: 20px;">{{ discussion?.body }}</p>
+      </template>
+      <template #footer>
+        <NCollapse style="background-color: rgb(233 233 238); padding-left: 20px; padding-top: 10px; padding-bottom: 10px;">
+          <NCollapseItem title="回复" :name="`reply-${discussion?.id}`">
+            <div>
+              <h1>111</h1>
+              <NTimeline/>
+            </div>
+          </NCollapseItem>
+        </NCollapse>
       </template>
     </NCard>
   </template>
-  <div class="prev-next"></div>
+  <div style="display: flex; flex-direction: row; align-items: center; justify-content: space-between;" v-if="(count - 1) * 5 < discussionList?.comments.totalCount!">
+    <div style="width: 47%; border-top: 1px solid rgb(155 167 167)"></div>
+    <NButton text style="font-size: 24px" @click="getDiscussionList">
+      <NSpin v-if="discussionListLoading"></NSpin>
+      <NIcon v-else>
+        <ChevronCircleDown20Regular/>
+      </NIcon>
+    </NButton>
+    <div style="width: 47%; border-top: 1px solid rgb(155 167 167)"></div>
+  </div>
 </template>
 <script setup lang="ts">
 
 import type { CreateDiscussionMutation, GetDiscussionByNumberQuery, GetUserInfoQuery, Discussion } from "@blog/.vitepress/utils/github/graphql/github";
 import { GithubDiscussApi } from "@blog/.vitepress/utils/github/discussion";
-import { NAvatar, NPopover, NStatistic } from "naive-ui";
+import { NAvatar, NDivider, NIcon, NPopover, NStatistic, NTimeline } from "naive-ui";
 import { GithubUserApi } from "@blog/.vitepress/utils/github/user";
+import {ChevronCircleDown20Regular} from '@vicons/fluent'
 import moment from "moment";
 
 type DiscussionType = NonNullable<
@@ -82,9 +102,18 @@ const accessToken: Ref<string | null> = ref(null)
 const discussionList: Ref<DiscussionWithUser | null | undefined> = ref()
 
 const count = ref(1)
+const discussionListLoading = ref(false)
 async function getDiscussionList() {
   loading.value = true
-  discussionList.value = (await discussClient.value?.getDiscussionByNumber(props.discussion.number, (count.value - 1) * 5, 5))
+  discussionListLoading.value = true
+  if (!discussionList.value) {
+    discussionList.value = (await discussClient.value?.getDiscussionByNumber(props.discussion.number, (count.value - 1) * 5, 5))
+  } else {
+    await discussClient.value?.getDiscussionByNumber(props.discussion.number, (count.value - 1) * 5, 5).then((res) => {
+      discussionList.value?.comments.nodes?.push(...res?.comments.nodes!)
+    })
+  }
+  discussionListLoading.value = false
   discussionList.value?.comments.nodes?.forEach(async (comment) => {
     if (comment) {
       console.log(comment?.author?.login)
@@ -124,5 +153,11 @@ onMounted(async () => {
 .username:hover {
   text-decoration: underline;
   color: rgb(0, 157, 255)
+}
+
+.discussion .n-card__footer {
+  padding-left: 0;
+  padding-right: 0;
+  padding-bottom: 0;
 }
 </style>

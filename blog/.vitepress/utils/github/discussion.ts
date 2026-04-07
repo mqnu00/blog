@@ -49,6 +49,16 @@ export class GithubDiscussApi {
                     first: pageSize,
                     after,
                 });
+
+                const comments = res.repository?.discussion?.comments;
+                if (!comments) return null;
+
+                // 如果没有下一页，提前结束
+                if (!comments.pageInfo.hasNextPage) break;
+
+                after = comments.pageInfo.endCursor!;
+                remaining -= pageSize;
+
             } catch (err: any) {
                 const msg = err.response?.errors?.[0]?.message;
                 if (msg?.includes("Could not resolve to a Discussion")) {
@@ -57,14 +67,6 @@ export class GithubDiscussApi {
                 throw err;
             }
 
-            const comments = res.repository?.discussion?.comments;
-            if (!comments) return null;
-
-            // 如果没有下一页，提前结束
-            if (!comments.pageInfo.hasNextPage) break;
-
-            after = comments.pageInfo.endCursor!;
-            remaining -= pageSize;
         }
 
         // 2. 用找到的 cursor 获取目标区间
