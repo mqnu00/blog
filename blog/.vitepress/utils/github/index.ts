@@ -1,20 +1,13 @@
-import {fetch, ProxyAgent} from "undici";
-import {GraphQLClient} from "graphql-request";
+import { GraphQLClient } from "graphql-request";
 
 export function createGithubClient(token: string, proxyUrl?: string) {
-    let dispatcher;
+    let customFetch: typeof fetch;
 
-    if (proxyUrl) {
-        console.log(proxyUrl)
-        dispatcher = new ProxyAgent(proxyUrl);
-    }
+    // 浏览器环境
+    customFetch = fetch;
 
     return new GraphQLClient("https://api.github.com/graphql", {
-        fetch: (url, options) =>
-            fetch(url, {
-                ...options,
-                dispatcher,
-            }),
+        fetch: customFetch,
         headers: {
             Authorization: `Bearer ${token}`,
         },
