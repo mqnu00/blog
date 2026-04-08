@@ -55,10 +55,12 @@
             </NCollapseItem>
           </NCollapse>
         </div>
-        <div class="prev-next" style="display: flex; flex-direction: column; margin: 20px 0; gap: 10px;">
-          <NButton v-if="discussion != null && access_token == null" @click="githubOauth">github登录</NButton>
-          <Discussion v-else-if="discussion != null && access_token != null" :discussion="discussion"/>
-        </div>
+        <ClientOnly>
+          <div class="prev-next" style="display: flex; flex-direction: column; margin: 20px 0; gap: 10px;">
+            <NButton v-if="discussion != null && access_token == null" @click="githubOauth">github登录</NButton>
+            <Discussion v-else-if="discussion != null && access_token != null" :discussion="discussion"/>
+          </div>
+        </ClientOnly>
       </template>
     </DefaultTheme.Layout>
 </template>
@@ -72,9 +74,11 @@ import { GithubOauthClient } from '../utils/github/oauth.js'
 import type { CreateDiscussionMutation } from "@blog/.vitepress/utils/github/graphql/github"
 import Discussion from '@blog/.vitepress/theme/views/Discussion/Index.vue'
 const { page, frontmatter} = useData()
-const discussion = frontmatter.value.discussion as NonNullable<
+const discussion = computed(() => {
+  return frontmatter.value.discussion as NonNullable<
     NonNullable<CreateDiscussionMutation["createDiscussion"]>["discussion"]
->
+  >
+})
 const access_token: Ref<string | null> = ref(null)
 
 const message = useMessage()

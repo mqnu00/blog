@@ -276,6 +276,10 @@ onMounted(async () => {
   await getDiscussionList()
 })
 
+watch(() => props.discussion, (newVal) => {
+  initDiscussion()
+})
+
 function randomColor() {
   const rand = () => Math.floor(Math.random() * 156) + 100 // 100~255，避免太暗
   return `rgb(${rand()}, ${rand()}, ${rand()})`
