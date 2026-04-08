@@ -1,8 +1,18 @@
 ---
 title: 在win11开发兼容ie的网页
-date: 2025-11-27 11:29
+date: '2025-11-27 11:29'
 author: 广习习
-tags: [ie, 兼容]
+tags:
+  - ie
+  - 兼容
+url: >-
+  https://mqnu00.github.io/blog/posts/frontend/develop-ie-win11/develop-ie-win11.html
+discussion:
+  id: D_kwDOQdT3Qc4Alc3r
+  number: 59
+  title: 在win11开发兼容ie的网页
+  url: 'https://github.com/mqnu00/blog/discussions/59'
+  createdAt: '2026-04-03T05:22:51Z'
 ---
 
 # 目标是什么

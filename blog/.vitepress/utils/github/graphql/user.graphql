@@ -1,0 +1,16 @@
+query GetUserInfo($login: String!) {
+    user(login: $login) {
+        login
+        name
+        avatarUrl
+        url
+        bio
+        websiteUrl
+        followers {
+            totalCount
+        }
+        following {
+            totalCount
+        }
+    }
+}

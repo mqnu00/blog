@@ -1,9 +1,19 @@
 ---
 title: VitePress运行时API详解
-date: 2025-01-18
+date: 2025-01-18T00:00:00.000Z
 author: 广习习
-tags: [技术分享, VitePress, API]
+tags:
+  - 技术分享
+  - VitePress
+  - API
 outline: deep
+url: 'https://mqnu00.github.io/blog/posts/vitepress/runtime-api-examples.html'
+discussion:
+  id: D_kwDOQdT3Qc4Alc3u
+  number: 62
+  title: VitePress运行时API详解
+  url: 'https://github.com/mqnu00/blog/discussions/62'
+  createdAt: '2026-04-03T05:22:56Z'
 ---
 
 # VitePress运行时API详解

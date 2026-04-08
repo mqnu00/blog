@@ -1,8 +1,18 @@
 ---
 title: VitePress中的Markdown扩展功能
-date: 2025-01-17
+date: 2025-01-17T00:00:00.000Z
 author: 广习习
-tags: [技术分享, Markdown, VitePress]
+tags:
+  - 技术分享
+  - Markdown
+  - VitePress
+url: 'https://mqnu00.github.io/blog/posts/vitepress/markdown-extensions.html'
+discussion:
+  id: D_kwDOQdT3Qc4Alc3t
+  number: 61
+  title: VitePress中的Markdown扩展功能
+  url: 'https://github.com/mqnu00/blog/discussions/61'
+  createdAt: '2026-04-03T05:22:56Z'
 ---
 
 # VitePress中的Markdown扩展功能

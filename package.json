@@ -2,21 +2,40 @@
   "scripts": {
     "docs:dev": "vitepress dev blog",
     "docs:build": "vitepress build blog",
-    "docs:preview": "vitepress preview blog"
+    "comment": "tsx ./scripts/create-comment-link.ts",
+    "docs:preview": "vitepress preview blog",
+    "codegen:github": "pnpm graphql-codegen --config ./blog/.vitepress/utils/github/graphql/graphql.config.yml "
   },
   "devDependencies": {
+    "@graphql-codegen/cli": "^6.2.1",
+    "@graphql-codegen/typescript": "^5.0.9",
+    "@graphql-codegen/typescript-graphql-request": "^7.0.0",
+    "@graphql-codegen/typescript-operations": "^5.0.9",
     "@types/node": "^24.10.1",
+    "global-agent": "^4.1.3",
+    "graphql": "^16.13.2",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
     "unplugin-auto-import": "^20.3.0",
     "unplugin-vue-components": "^30.0.0",
     "vitepress": "^1.6.4"
   },
   "dependencies": {
+    "@octokit/graphql": "^9.0.3",
+    "@vicons/fluent": "^0.13.0",
     "cheerio": "^1.1.2",
+    "commander": "^14.0.3",
     "dayjs": "^1.11.19",
+    "dotenv": "^17.4.0",
     "feed": "^5.1.0",
+    "graphql-request": "^7.4.0",
+    "graphql-tag": "^2.12.6",
     "gray-matter": "^4.0.3",
+    "moment": "^2.30.1",
     "naive-ui": "^2.43.2",
     "node-fetch": "^3.3.2",
+    "undici": "^7.24.7",
+    "vitest": "^4.1.2",
     "vue": "^3.5.25"
   },
   "type": "module"

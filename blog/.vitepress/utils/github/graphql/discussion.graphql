@@ -1,0 +1,123 @@
+query GetDiscussionCount($owner: String!, $repo: String!) {
+    repository(owner: $owner, name: $repo) {
+        discussions {
+            totalCount
+        }
+    }
+}
+
+query GetDiscussionByNumber($owner: String!, $repo: String!, $number: Int!, $first: Int!, $after: String) {
+    repository(owner: $owner, name: $repo) {
+        discussion(number: $number) {
+            id
+            number
+            title
+            body
+            createdAt
+            author {
+                login
+            }
+            comments(first: $first, after: $after) {
+                totalCount,
+                pageInfo {
+                    hasNextPage
+                    endCursor
+                },
+                nodes {
+                    id
+                    body
+                    createdAt
+                    author {
+                        login
+                    }
+                }
+            }
+        }
+    }
+}
+
+query GetDiscussionCommentReply($commentId: ID!, $first: Int = 40, $after: String) {
+    node(id: $commentId) {
+        ... on DiscussionComment {
+            replies(first: $first, after: $after) {
+                nodes {
+                    body
+                    author {
+                        login
+                    }
+                    createdAt
+                    url
+                }
+                pageInfo {
+                    endCursor
+                    hasNextPage
+                }
+                totalCount
+            }
+        }
+    }
+}
+
+mutation CreateDiscussion(
+    $repositoryId: ID!
+    $title: String!
+    $body: String!
+    $categoryId: ID!
+) {
+    createDiscussion(
+        input: {
+            repositoryId: $repositoryId
+            title: $title
+            body: $body
+            categoryId: $categoryId
+        }
+    ) {
+        discussion {
+            id
+            number
+            title
+            url
+            createdAt
+        }
+    }
+}
+
+mutation AddDiscussionComment($discussionId: ID!, $body: String!) {
+  addDiscussionComment(input: { discussionId: $discussionId, body: $body }) {
+    comment {
+      id
+      body
+      createdAt
+      author {
+        login
+      }
+    }
+  }
+}
+
+mutation AddReplyToComment(
+  $discussionId: ID!
+  $commentId: ID!
+  $body: String!
+) {
+  addDiscussionComment(
+    input: {
+      discussionId: $discussionId
+      replyToId: $commentId
+      body: $body
+    }
+  ) {
+    comment {
+      id
+      body
+      createdAt
+      author {
+        login
+      }
+      replyTo {
+        id
+      }
+    }
+  }
+}
+

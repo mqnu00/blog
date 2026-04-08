@@ -1,8 +1,18 @@
 ---
 title: VitePress使用技巧
-date: 2025-01-16
+date: 2025-01-16T00:00:00.000Z
 author: 广习习
-tags: [技术分享, VitePress, Markdown]
+tags:
+  - 技术分享
+  - VitePress
+  - Markdown
+url: 'https://mqnu00.github.io/blog/posts/vitepress/vitepress-tips.html'
+discussion:
+  id: D_kwDOQdT3Qc4Alc3v
+  number: 63
+  title: VitePress使用技巧
+  url: 'https://github.com/mqnu00/blog/discussions/63'
+  createdAt: '2026-04-03T05:23:01Z'
 ---
 
 # VitePress使用技巧

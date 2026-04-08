@@ -1,0 +1,27 @@
+# graphql.config.yml
+# 1. 核心配置：定义Schema来源（GitHub API 官方节点）
+schema:
+  - "https://api.github.com/graphql":
+      headers:
+        # ${env:GITHUB_TOKEN} 会自动读取系统环境变量
+        Authorization: "Bearer ${env:GITHUB_TOKEN}"
+        User-Agent: "My-GraphQL-App"
+
+# 2. 核心配置：定义你的查询文件位置
+documents: "./*.graphql"
+
+# 3. 扩展配置：例如自动生成代码
+extensions:
+  codegen:
+    generates:
+      "./github.ts":
+        plugins:
+          - typescript
+          - typescript-operations
+          - typescript-graphql-request
+        config:
+          skipTypename: true
+          avoidOptionals: true
+          immutableTypes: false
+          scalars:
+            DateTime: string

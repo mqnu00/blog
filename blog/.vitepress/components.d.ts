@@ -11,8 +11,15 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    NButton: typeof import('naive-ui')['NButton']
+    NCard: typeof import('naive-ui')['NCard']
     NCollapse: typeof import('naive-ui')['NCollapse']
     NCollapseItem: typeof import('naive-ui')['NCollapseItem']
+    NFlex: typeof import('naive-ui')['NFlex']
+    NInput: typeof import('naive-ui')['NInput']
+    NResult: typeof import('naive-ui')['NResult']
+    NSkeleton: typeof import('naive-ui')['NSkeleton']
+    NSpin: typeof import('naive-ui')['NSpin']
     NTime: typeof import('naive-ui')['NTime']
   }
 }
