@@ -35800,6 +35800,35 @@ export type CreateDiscussionMutationVariables = Exact<{
 
 export type CreateDiscussionMutation = { createDiscussion: { discussion: { id: string, number: number, title: string, url: any, createdAt: string } | null } | null };
 
+export type AddDiscussionCommentMutationVariables = Exact<{
+  discussionId: Scalars['ID']['input'];
+  body: Scalars['String']['input'];
+}>;
+
+
+export type AddDiscussionCommentMutation = { addDiscussionComment: { comment: { id: string, body: string, createdAt: string, author:
+        | { login: string }
+        | { login: string }
+        | { login: string }
+        | { login: string }
+        | { login: string }
+       | null } | null } | null };
+
+export type AddReplyToCommentMutationVariables = Exact<{
+  discussionId: Scalars['ID']['input'];
+  commentId: Scalars['ID']['input'];
+  body: Scalars['String']['input'];
+}>;
+
+
+export type AddReplyToCommentMutation = { addDiscussionComment: { comment: { id: string, body: string, createdAt: string, author:
+        | { login: string }
+        | { login: string }
+        | { login: string }
+        | { login: string }
+        | { login: string }
+       | null, replyTo: { id: string } | null } | null } | null };
+
 export type GetUserInfoQueryVariables = Exact<{
   login: Scalars['String']['input'];
 }>;
@@ -35886,6 +35915,39 @@ export const CreateDiscussionDocument = gql`
   }
 }
     `;
+export const AddDiscussionCommentDocument = gql`
+    mutation AddDiscussionComment($discussionId: ID!, $body: String!) {
+  addDiscussionComment(input: {discussionId: $discussionId, body: $body}) {
+    comment {
+      id
+      body
+      createdAt
+      author {
+        login
+      }
+    }
+  }
+}
+    `;
+export const AddReplyToCommentDocument = gql`
+    mutation AddReplyToComment($discussionId: ID!, $commentId: ID!, $body: String!) {
+  addDiscussionComment(
+    input: {discussionId: $discussionId, replyToId: $commentId, body: $body}
+  ) {
+    comment {
+      id
+      body
+      createdAt
+      author {
+        login
+      }
+      replyTo {
+        id
+      }
+    }
+  }
+}
+    `;
 export const GetUserInfoDocument = gql`
     query GetUserInfo($login: String!) {
   user(login: $login) {
@@ -35923,6 +35985,12 @@ export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = 
     },
     CreateDiscussion(variables: CreateDiscussionMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<CreateDiscussionMutation> {
       return withWrapper((wrappedRequestHeaders) => client.request<CreateDiscussionMutation>({ document: CreateDiscussionDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'CreateDiscussion', 'mutation', variables);
+    },
+    AddDiscussionComment(variables: AddDiscussionCommentMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<AddDiscussionCommentMutation> {
+      return withWrapper((wrappedRequestHeaders) => client.request<AddDiscussionCommentMutation>({ document: AddDiscussionCommentDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'AddDiscussionComment', 'mutation', variables);
+    },
+    AddReplyToComment(variables: AddReplyToCommentMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<AddReplyToCommentMutation> {
+      return withWrapper((wrappedRequestHeaders) => client.request<AddReplyToCommentMutation>({ document: AddReplyToCommentDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'AddReplyToComment', 'mutation', variables);
     },
     GetUserInfo(variables: GetUserInfoQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<GetUserInfoQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<GetUserInfoQuery>({ document: GetUserInfoDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'GetUserInfo', 'query', variables);

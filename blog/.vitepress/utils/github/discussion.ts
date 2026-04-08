@@ -2,7 +2,7 @@ import { getSdk } from "../github/graphql/github";
 import {createGithubClient} from "./index";
 
 export class GithubDiscussApi {
-    private sdk;
+    public sdk;
     private readonly owner: string;
     private readonly repo: string;
     private readonly repoId: string;
@@ -107,8 +107,10 @@ export class GithubDiscussApi {
                 after,
             });
 
+            console.log(pageSize, after, res)
+
             const replies = res.node?.replies;
-            if (!replies) return undefined;
+            if (!replies) return null;
 
             // 如果没有下一页，提前结束
             if (!replies.pageInfo.hasNextPage) break;
@@ -143,6 +145,30 @@ export class GithubDiscussApi {
 
         return res.createDiscussion?.discussion ?? null;
     }
+    
+    async addDiscussionComment (
+        discussionId: string,
+        body: string
+    ) {
+        const res = await this.sdk.AddDiscussionComment({
+            discussionId,
+            body
+        })
 
+        return res.addDiscussionComment?.comment;
+    }
 
+    async addReplyToComment (
+        discussionId: string,
+        commentId: string,
+        body: string
+    ) {
+        const res = await this.sdk.AddReplyToComment({
+            discussionId,
+            commentId,
+            body
+        })
+
+        return res.addDiscussionComment?.comment;
+    }
 }

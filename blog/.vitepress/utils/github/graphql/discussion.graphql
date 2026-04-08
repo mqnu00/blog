@@ -82,3 +82,42 @@ mutation CreateDiscussion(
     }
 }
 
+mutation AddDiscussionComment($discussionId: ID!, $body: String!) {
+  addDiscussionComment(input: { discussionId: $discussionId, body: $body }) {
+    comment {
+      id
+      body
+      createdAt
+      author {
+        login
+      }
+    }
+  }
+}
+
+mutation AddReplyToComment(
+  $discussionId: ID!
+  $commentId: ID!
+  $body: String!
+) {
+  addDiscussionComment(
+    input: {
+      discussionId: $discussionId
+      replyToId: $commentId
+      body: $body
+    }
+  ) {
+    comment {
+      id
+      body
+      createdAt
+      author {
+        login
+      }
+      replyTo {
+        id
+      }
+    }
+  }
+}
+

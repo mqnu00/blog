@@ -6,7 +6,7 @@
     <template #default>
       <NSkeleton height="100%" size="large" v-if="loading === true" />
       <template v-else>
-        <NInput style="height: 100%" type="textarea" />
+        <NInput style="height: 100%" type="textarea" v-model:value="commentContent"/>
       </template>
     </template>
     <template #footer>
@@ -15,7 +15,7 @@
         <div></div>
         <div>
           <NSkeleton :width="80" round size="medium" v-if="loading === true" />
-          <NButton v-else>发送</NButton>
+          <NButton v-else @click="sendComment" :loading="sendCommentLoading">发送</NButton>
         </div>
       </NFlex>
     </template>
@@ -41,16 +41,61 @@
         <p style="margin-left: 20px;">{{ discussion?.body }}</p>
       </template>
       <template #footer>
-        <NCollapse style="background-color: rgb(233 233 238); padding-left: 20px; padding-top: 10px; padding-bottom: 10px;" @item-header-click="expandReply">
+        <NCollapse size="large" style="background-color: rgb(233 233 238); padding-left: 20px; padding-top: 10px; padding-bottom: 10px; padding-right: 20px;" @item-header-click="expandReply">
           <NCollapseItem title="回复" :name="index">
             <div>
-              <NTimeline>
-                <template v-for="reply in discussion?.replies?.nodes">
-                  <NTimelineItem>
-                    {{ reply?.body }}
+              <NTimeline class="reply-timeline">
+                <template v-for="(reply, reIndex) in discussion?.replies?.nodes" :key="reIndex">
+                  <NTimelineItem :time="reply?.createDate?.toLocaleString()" :color="randomColor()">
+                    <template #icon>
+                      <NAvatar round size="small" :src="reply?.userInfo?.avatarUrl" style="width: 100%; height: 100%; scale: 2;"/>
+                    </template>
+                    <span>{{ `${reply?.author?.login}:`  }}</span>
+                    <div style="padding-left: 20px; padding-top: 20px; padding-bottom: 20px;">
+                      {{ `${reply?.body}` }}
+                    </div>
                   </NTimelineItem>
                 </template>
+                <NTimelineItem v-if="discussion?.replies?.loading ?? true">
+                  <template #icon>
+                    <NSpin :size="16"></NSpin>
+                  </template>
+                  加载中
+                </NTimelineItem>
+                <NTimelineItem v-else v-if="(discussion?.replies?.nodes?.length ?? 0) < (discussion?.replies?.totalCount ?? 0)">
+                  <template #icon>
+                    <NButton text style="font-size: 18px;">
+                      <NIcon>
+                        <ChevronCircleDown20Regular/>
+                      </NIcon>
+                    </NButton>
+                  </template>
+                  <template #default>
+                    <a class="reply-expand-text" @click="getDiscussionReply(index)">展开</a>
+                  </template>
+                </NTimelineItem>
               </NTimeline>
+              <NCard style="background-color: rgb(233 233 238); margin-top: 10px; padding-right: 10px; padding-bottom: 10px; border: 1px solid white; ">
+                <template #header>
+                  回复
+                </template>
+                <template #default>
+                  <NSkeleton height="100%" size="large" v-if="loading === true" />
+                  <template v-else>
+                    <NInput style="height: 100%" type="textarea" />
+                  </template>
+                </template>
+                <template #footer>
+
+                  <NFlex style="justify-content: space-between">
+                    <div></div>
+                    <div>
+                      <NSkeleton :width="80" round size="medium" v-if="loading === true" />
+                      <NButton v-else>发送</NButton>
+                    </div>
+                  </NFlex>
+                </template>
+              </NCard>
             </div>
           </NCollapseItem>
         </NCollapse>
@@ -72,11 +117,13 @@
 
 import type { CreateDiscussionMutation, GetDiscussionByNumberQuery, GetUserInfoQuery, GetDiscussionCommentReplyQuery, Discussion } from "@blog/.vitepress/utils/github/graphql/github";
 import { GithubDiscussApi } from "@blog/.vitepress/utils/github/discussion";
-import { CollapseItemHeaderSlotProps, CollapseItemProps, NAvatar, NDivider, NIcon, NPopover, NStatistic, NTimeline, NTimelineItem } from "naive-ui";
+import { CollapseItemHeaderSlotProps, CollapseItemProps, NAvatar, NDivider, NIcon, NPopover, NStatistic, NTimeline, NTimelineItem, useMessage } from "naive-ui";
 import { GithubUserApi } from "@blog/.vitepress/utils/github/user";
-import {ChevronCircleDown20Regular} from '@vicons/fluent'
+import {ChevronCircleDown20Regular, ReceiptBag20Filled} from '@vicons/fluent'
 import moment from "moment";
 import type {CollapseProps} from 'naive-ui'
+
+const message = useMessage()
 
 type DiscussionType = NonNullable<
   NonNullable<GetDiscussionByNumberQuery["repository"]>["discussion"]
@@ -91,7 +138,13 @@ type DiscussionWithUser = Omit<DiscussionType, 'comments'> & {
         createDate?: Date;
         startCount?: number;
         limit?: number;
-        replies?: NonNullable<GetDiscussionCommentReplyQuery['node']>["replies"]
+        replies?: Omit<NonNullable<GetDiscussionCommentReplyQuery['node']>["replies"], 'replies'> & {
+          loading: boolean,
+          nodes: Array<null | Omit<NonNullable<NonNullable<NonNullable<GetDiscussionCommentReplyQuery['node']>["replies"]['nodes']>[0]>, 'reply'> & {
+            createDate?: number,
+            userInfo?: GetUserInfoQuery["user"];
+          }> | null
+        }
       } | null
     > | null;  // 保持可以为 null
   };
@@ -135,14 +188,42 @@ async function getDiscussionList() {
   console.log(discussionList.value)
   loading.value = false
 }
+function initDiscussion() {
+  count.value = 1
+  discussionList.value = null
+  getDiscussionList()
+}
 
 async function getDiscussionReply(whichOne: number) {
   const comment = discussionList.value?.comments.nodes![whichOne]
-  const res = await discussClient.value?.getDiscussionComment(comment?.id!, (comment?.startCount ?? 0 - 1) * 5, comment?.limit)
+  if (comment?.replies) {
+    comment.replies.loading = true
+  }
+  let res = await discussClient.value?.getDiscussionComment(comment?.id!, ((comment?.startCount ?? 1) - 1) * 5, comment?.limit)
+  for (var reply of (res?.nodes ?? [])) {
+    if (reply) {
+      reply.createDate = moment(reply?.createdAt).toDate() 
+      if (reply.author?.login) {
+        reply.userInfo = await userClient.value?.getUserInfo(reply.author?.login)
+      }
+    }
+  }
   if (comment && comment?.replies == null) {
-    comment.replies = res
+    if (res) {
+      comment.replies = {
+        ...res,
+        loading: false
+      }
+    }
+    if (comment.replies) {
+      comment.replies.loading = false
+    }
   } else {
     comment?.replies!.nodes?.push(...res?.nodes!)
+    comment!.replies!.loading = false
+  }
+  if (discussionList.value) {
+    discussionList.value.comments.nodes![whichOne]!.startCount = (discussionList.value.comments.nodes![whichOne]!.startCount ?? 1) + 1;
   }
 }
 const expandReply: CollapseProps["onItemHeaderClick"] = (data) => {
@@ -152,6 +233,29 @@ const expandReply: CollapseProps["onItemHeaderClick"] = (data) => {
     }
   }
 }
+
+// 发送评论
+const commentContent = ref()
+const sendCommentLoading = ref(false)
+async function sendComment() {
+  if (!commentContent.value || commentContent.value === '') {
+    message.error("评论内容为空！")
+  }
+  if (discussionList.value?.id) {
+    sendCommentLoading.value = true
+    const res = await discussClient.value?.addDiscussionComment(discussionList.value.id, commentContent.value)
+    if (res?.id) {
+      message.success("评论发送成功！")
+      commentContent.value = ''
+      initDiscussion()
+    } else {
+      message.error("评论发送失败！")
+    }
+    sendCommentLoading.value = false
+  }
+}
+// 发送回复
+
 
 onMounted(async () => {
   accessToken.value = localStorage.getItem("access_token")
@@ -171,6 +275,12 @@ onMounted(async () => {
   )
   await getDiscussionList()
 })
+
+function randomColor() {
+  const rand = () => Math.floor(Math.random() * 156) + 100 // 100~255，避免太暗
+  return `rgb(${rand()}, ${rand()}, ${rand()})`
+}
+
 </script>
 <style>
 .username {
@@ -186,5 +296,15 @@ onMounted(async () => {
   padding-left: 0;
   padding-right: 0;
   padding-bottom: 0;
+}
+
+.reply-expand-text:hover {
+  cursor: pointer;
+  text-decoration: underline;
+  color: rgb(0, 157, 255)
+}
+
+.reply-timeline .n-timeline-item-content__meta {
+  /* padding-left: 10px; */
 }
 </style>
