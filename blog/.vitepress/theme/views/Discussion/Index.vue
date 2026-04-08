@@ -82,7 +82,7 @@
                 <template #default>
                   <NSkeleton height="100%" size="large" v-if="loading === true" />
                   <template v-else>
-                    <NInput style="height: 100%" type="textarea" />
+                    <NInput style="height: 100%" type="textarea" v-model:value="discussion!.replyContent"/>
                   </template>
                 </template>
                 <template #footer>
@@ -91,7 +91,7 @@
                     <div></div>
                     <div>
                       <NSkeleton :width="80" round size="medium" v-if="loading === true" />
-                      <NButton v-else>发送</NButton>
+                      <NButton v-else @click="sendReply(index)" :loading="sendReplyLoading">发送</NButton>
                     </div>
                   </NFlex>
                 </template>
@@ -138,6 +138,7 @@ type DiscussionWithUser = Omit<DiscussionType, 'comments'> & {
         createDate?: Date;
         startCount?: number;
         limit?: number;
+        replyContent?: string;
         replies?: Omit<NonNullable<GetDiscussionCommentReplyQuery['node']>["replies"], 'replies'> & {
           loading: boolean,
           nodes: Array<null | Omit<NonNullable<NonNullable<NonNullable<GetDiscussionCommentReplyQuery['node']>["replies"]['nodes']>[0]>, 'reply'> & {
@@ -182,6 +183,7 @@ async function getDiscussionList() {
       comment.createDate = moment(comment.createdAt).toDate()
       comment.startCount = 1;
       comment.limit = 5;
+      comment.replyContent = '';
     }
   })
   count.value = count.value + 1
@@ -255,7 +257,25 @@ async function sendComment() {
   }
 }
 // 发送回复
-
+const sendReplyLoading = ref(false)
+async function sendReply (commentIndex: number) {
+  const comments = discussionList.value?.comments.nodes!
+  if (!comments[commentIndex]?.replyContent || comments[commentIndex]?.replyContent === '') {
+    message.error("回复内容为空！")
+  }
+  if (comments[commentIndex]?.id) {
+    sendReplyLoading.value = true
+    const res = await discussClient.value?.addReplyToComment(discussionList.value?.id!, comments[commentIndex].id, comments[commentIndex].replyContent!)
+    if (res?.id) {
+      message.success("回复发送成功！")
+      comments[commentIndex].replyContent! = ''
+      initDiscussion()
+    } else {
+      message.error("回复发送失败！")
+    }
+    sendReplyLoading.value = false
+  }
+}
 
 onMounted(async () => {
   accessToken.value = localStorage.getItem("access_token")
