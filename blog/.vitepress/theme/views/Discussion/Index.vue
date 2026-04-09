@@ -41,7 +41,7 @@
         <p style="margin-left: 20px;">{{ discussion?.body }}</p>
       </template>
       <template #footer>
-        <NCollapse size="large" style="background-color: rgb(233 233 238); padding-left: 20px; padding-top: 10px; padding-bottom: 10px; padding-right: 20px;" @item-header-click="expandReply">
+        <NCollapse size="large" style="background-color: var(--hint-bg-color); padding-left: 20px; padding-top: 10px; padding-bottom: 10px; padding-right: 20px;" @item-header-click="expandReply">
           <NCollapseItem title="回复" :name="index">
             <div>
               <NTimeline class="reply-timeline">
@@ -75,7 +75,7 @@
                   </template>
                 </NTimelineItem>
               </NTimeline>
-              <NCard style="background-color: rgb(233 233 238); margin-top: 10px; padding-right: 10px; padding-bottom: 10px; border: 1px solid white; ">
+              <NCard style="background-color: var(--hint-bg-color); margin-top: 10px; padding-right: 10px; padding-bottom: 10px; border: 1px solid white; ">
                 <template #header>
                   回复
                 </template>

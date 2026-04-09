@@ -32,7 +32,7 @@
           <NCollapse 
             :key="page.relativePath"
             style="
-                background-color: rgb(233 233 238); 
+                background-color: var(--hint-bg-color); 
                 border-radius: 8px; 
                 line-height: 30px;
                 padding: 10px;
