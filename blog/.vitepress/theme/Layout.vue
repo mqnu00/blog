@@ -28,4 +28,8 @@ const cssVars = computed(() => {
     }
   }
 })
+
+onMounted(() => {
+  isClient.value = true
+})
 </script>
