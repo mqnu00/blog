@@ -11,14 +11,21 @@ import Page from './Page.vue';
 import { useData } from 'vitepress';
 
 const {isDark} = useData()
+const isClient = ref(false)
 
 const theme = computed(() => {
-  return isDark.value ? darkTheme : undefined
+  if (isClient.value) {
+    return isDark.value ? darkTheme : undefined
+  }
 })
 
 // 动态生成 CSS 变量
-const cssVars = computed(() => ({
-  '--hint-bg-color': isDark.value ? 'rgb(70, 70, 70)' : 'rgb(233, 233, 238)',
-  '--hint-content-bg-hover': isDark.value ? 'rgb(95, 95, 95)' : 'rgb(233, 233, 238)',
-}))
+const cssVars = computed(() => {
+  if (isClient.value) {
+    return {
+      '--hint-bg-color': isDark.value ? 'rgb(70, 70, 70)' : 'rgb(233, 233, 238)',
+      '--hint-content-bg-hover': isDark.value ? 'rgb(95, 95, 95)' : 'rgb(233, 233, 238)',
+    }
+  }
+})
 </script>
