@@ -16,12 +16,6 @@ const theme = computed(() => {
   return isDark.value ? darkTheme : undefined
 })
 
-const normalLightTheme = {
-  common: {
-    replyBackgroundColor: isDark.value ? '#2d2d2d' : '#f0f2f5',
-  }
-}
-
 // 动态生成 CSS 变量
 const cssVars = computed(() => ({
   '--hint-bg-color': isDark.value ? 'rgb(70, 70, 70)' : 'rgb(233, 233, 238)',
