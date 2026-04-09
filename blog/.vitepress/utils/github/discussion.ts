@@ -107,7 +107,7 @@ export class GithubDiscussApi {
                 after,
             });
 
-            console.log(pageSize, after, res)
+            // console.log(pageSize, after, res)
 
             const replies = res.node?.replies;
             if (!replies) return null;

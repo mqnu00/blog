@@ -94,7 +94,7 @@ async function githubOauth () {
     return
   }
 
-  const url = client.createAuthorizationURL("repo,read:user,read:discussion,write:discussion")
+  const url = client.createAuthorizationURL("public_repo,read:user,read:discussion,write:discussion")
   sessionStorage.setItem("callback_blog_url", window.location.href)
   // 跳转 GitHub
   window.location.href = url
