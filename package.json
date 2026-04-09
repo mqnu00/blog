@@ -2,7 +2,6 @@
   "scripts": {
     "docs:dev": "vitepress dev blog",
     "docs:build": "vitepress build blog",
-    "comment": "tsx ./scripts/create-comment-link.ts",
     "docs:preview": "vitepress preview blog",
     "codegen:github": "pnpm graphql-codegen --config ./blog/.vitepress/utils/github/graphql/graphql.config.yml "
   },
