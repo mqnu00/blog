@@ -187,7 +187,7 @@ async function getDiscussionList() {
     }
   })
   count.value = count.value + 1
-  console.log(discussionList.value)
+  // console.log(discussionList.value)
   loading.value = false
 }
 function initDiscussion() {
