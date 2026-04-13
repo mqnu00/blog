@@ -222,7 +222,7 @@ export default defineConfig({
     nav: [
       { text: '首页', link: '/' },
       { text: '博客', link: '/posts/' },
-      { text: '关于', link: '/about' }
+      { text: '关于', link: '/about/about' }
     ],
 
     sidebar: {
