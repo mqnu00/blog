@@ -11,6 +11,7 @@ import {load} from 'cheerio'
 import {getGithubHistory} from './utils/github/gitHistory.js'
 import dotenv from "dotenv";
 import {GithubDiscussApi} from "./utils/github/discussion"
+import moment from 'moment'
 
 const mode = process.env.NODE_ENV || 'development'
 dotenv.config({
@@ -109,10 +110,20 @@ export default defineConfig({
         filePath: githubPath, 
         token: process.env.GITHUB_TOKEN 
       }
-    )
+    ).then((res) => {
+      res.forEach((item) => {
+        item.date = moment
+                .utc(item.date)
+                .utcOffset(8)
+                .format("YYYY-MM-DD HH:mm:ss Z")
+              ?? null
+      })
+      return res
+    })
+
     pageData.git = { 
-      updated: history[0]?.date ?? null, 
-      history 
+      updated: history[0].date,
+      history
     }
 
     pageData.url = `${baseUrl}/${pageData.filePath.replace('.md', '.html')}`
