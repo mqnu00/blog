@@ -4,7 +4,7 @@
         <title>广习习的博客</title>
         <link>https://mqnu00.github.io/blog/</link>
         <description>分享技术与生活的个人博客</description>
-        <lastBuildDate>Mon, 13 Apr 2026 12:23:50 GMT</lastBuildDate>
+        <lastBuildDate>Wed, 15 Apr 2026 06:59:13 GMT</lastBuildDate>
         <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
         <generator>https://github.com/jpmonette/feed</generator>
         <language>en-US</language>
@@ -45,7 +45,7 @@
 <span class="line"><span>            console.</span><span>error</span><span>(</span><span>"GET 请求失败:"</span><span>, err);</span></span>
 <span class="line"><span>        }</span></span>
 <span class="line"><span>    });</span></span>
-<span class="line"><span>}</span></span></code></pre></div><p>问题在于希望一个请求的结果，解析处理后作为另一个请求的参数，就有先后顺序，导致出现了复杂的嵌套。 还是有点头疼的。</p><div class="language-js vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang">js</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>ajaxGET</span><span>(url1, params1, </span><span>function</span><span> (</span><span>res1</span><span>) {</span></span>
+<span class="line"><span>}</span></span></code></pre></div><p>问题在于希望一个请求的结果，解析处理后作为另一个请求的参数，就有先后顺序，导致出现了复杂的嵌套，即回调地狱。 还是有点头疼的。</p><div class="language-js vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang">js</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>ajaxGET</span><span>(url1, params1, </span><span>function</span><span> (</span><span>res1</span><span>) {</span></span>
 <span class="line"><span>    var</span><span> params2 </span><span>=</span><span> solve1</span><span>(res1);</span></span>
 <span class="line"><span>    ajaxGET</span><span>(url2, params2, </span><span>function</span><span> (</span><span>res2</span><span>) {</span></span>
 <span class="line"><span>        // ......</span></span>
