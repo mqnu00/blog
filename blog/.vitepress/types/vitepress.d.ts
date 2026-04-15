@@ -3,19 +3,20 @@ import {CreateDiscussionMutation} from "@blog/.vitepress/utils/github/graphql/gi
 
 declare module 'vitepress' {
   interface PageData {
+    git?: {
+      updated?: string
+      history?: Array<{
+        sha: string
+        author: string
+        date: string
+        message: string
+        url: string
+      }>
+    },
+    url?: string,
     frontmatter: {
-      git?: {
-        updated?: string
-        history?: Array<{
-          sha: string
-          author: string
-          date: string
-          message: string
-          url: string
-        }>
-      },
       discussion?: CreateDiscussionMutation
-      url?: string
+      
     }
   }
 }
