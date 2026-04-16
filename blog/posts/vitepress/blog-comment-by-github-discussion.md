@@ -6,6 +6,13 @@ tags:
   - github discussion
   - ouath
   - graphql
+url: 'https://mqnu00.github.io/blog/posts/vitepress/blog-comment-by-github-discussion.html'
+discussion:
+  id: D_kwDOQdT3Qc4AlvPk
+  number: 85
+  title: 基于github的discussion为博客添加评论
+  url: 'https://github.com/mqnu00/blog/discussions/85'
+  createdAt: '2026-04-16T06:42:12Z'
 ---
 
 # 前期调研
