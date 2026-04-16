@@ -247,6 +247,7 @@ export default defineConfig({
             collapsed: true,
             items: [
               {text: '给文章添加tag并支持搜索索引', link: '/posts/vitepress/article-tag'},
+              {text: '基于github的discussion为博客添加评论', link: '/posts/vitepress/blog-comment-by-github-discussion'},
               { text: '我的第一篇博客', link: '/posts/vitepress/my-first-post' },
               { text: 'VitePress使用技巧', link: '/posts/vitepress/vitepress-tips' },
               { text: 'VitePress中的Markdown扩展功能', link: '/posts/vitepress/markdown-extensions' },
