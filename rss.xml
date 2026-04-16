@@ -4,7 +4,7 @@
         <title>广习习的博客</title>
         <link>https://mqnu00.github.io/blog/</link>
         <description>分享技术与生活的个人博客</description>
-        <lastBuildDate>Wed, 15 Apr 2026 07:22:02 GMT</lastBuildDate>
+        <lastBuildDate>Thu, 16 Apr 2026 06:56:21 GMT</lastBuildDate>
         <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
         <generator>https://github.com/jpmonette/feed</generator>
         <language>en-US</language>
@@ -109,6 +109,75 @@
 <span class="line"><span>        }</span></span>
 <span class="line"><span>      }</span></span>
 <span class="line"><span>    },</span></span></code></pre></div><p>不过有个缺点是 dev 模式不会因为 md 元数据修改而重新生成搜索索引</p></div>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[基于github的discussion为博客添加评论]]></title>
+            <link>https://mqnu00.github.io/blog//posts/vitepress/blog-comment-by-github-discussion.html</link>
+            <guid isPermaLink="false">https://mqnu00.github.io/blog//posts/vitepress/blog-comment-by-github-discussion.html</guid>
+            <pubDate>Thu, 09 Apr 2026 16:16:00 GMT</pubDate>
+            <content:encoded><![CDATA[<div><h1 id="前期调研" tabindex="-1">前期调研 <a class="header-anchor" href="#前期调研" aria-label="Permalink to &quot;前期调研&quot;">​</a></h1><h2 id="参考已有的项目" tabindex="-1">参考已有的项目 <a class="header-anchor" href="#参考已有的项目" aria-label="Permalink to &quot;参考已有的项目&quot;">​</a></h2><p>实际上这样想法已经有人实现，并且已封装成简单配置即可使用的依赖，比如 <a href="https://github.com/giscus/giscus" target="_blank" rel="noreferrer">giscus</a>。</p><p>但是分析了相关功能，其中一个功能 <code>可以不为文章创建 discussion，等到有人评论再创建 discussion</code> 让我感到疑惑。</p><p>因为使用的是静态网页，并且想要创建 <code>github discussion</code> 是需要 <code>discussion id</code> 和 <code>access_token</code> 去请求 API 的。ID 不可能说有人创建评论就重新构建静态网页然后重新写入；token 也不建议保存在静态网页，因为不论怎么混淆也是能找到的。当然 gisgus 也不是把 token 保存在前端，而是走他们自己的 <code>github bot</code> 帮你创建评论，而它讨论的 API 是可以重复调用的，我有提 <a href="https://github.com/giscus/giscus/issues/1702" target="_blank" rel="noreferrer">重复创建讨论</a> 询问了一下，确实理解是设计需要。</p><p>因为不希望自己项目的评论区随地大小便，所以我决定自己写评论模块。</p><h2 id="查看-github-graphql-和-oauth-api" tabindex="-1">查看 github graphql 和 oauth api <a class="header-anchor" href="#查看-github-graphql-和-oauth-api" aria-label="Permalink to &quot;查看 github graphql 和 oauth api&quot;">​</a></h2><h3 id="oauth-api" tabindex="-1">oauth api <a class="header-anchor" href="#oauth-api" aria-label="Permalink to &quot;oauth api&quot;">​</a></h3><p>由于是静态网页，纯前端项目，我开始寻找有没有无需后端就能通过 oauth 并且 github 支持的协议。当然一开始找到了，是 <a href="https://github.blog/changelog/2025-07-14-pkce-support-for-oauth-and-github-app-authentication/" target="_blank" rel="noreferrer"><code>PKCE</code></a> 。</p><p>但是尝试跑通失败，最重要的一点是 github 验证不支持跨域，必须要有后端去转发请求。那这还不如正常的去走 ouath 呢。</p><p>正常走 oauth 是：</p><div class="language-text vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang">text</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>┌─────────┐      (1) 请求授权 (scope, client_id等)       ┌─────────────┐</span></span>
+<span class="line"><span>│         │ ─────────────────────────────────────────&gt; │             │</span></span>
+<span class="line"><span>│  前端    │                                            │   GitHub    │</span></span>
+<span class="line"><span>│ (浏览器) │ &lt;───────────────────────────────────────── │   服务器     │</span></span>
+<span class="line"><span>│         │      (2) 重定向到github的用户登录并授权页面     │             │</span></span>
+<span class="line"><span>└─────────┘                                            └─────────────┘</span></span>
+<span class="line"><span>     │                                                       │</span></span>
+<span class="line"><span>     │ (3) 重定向回前端并返回 code                              │</span></span>
+<span class="line"><span>     │ &lt;─────────────────────────────────────────────────────┘</span></span>
+<span class="line"><span>     │</span></span>
+<span class="line"><span>     │ (4) 传递 code </span></span>
+<span class="line"><span>     ▼</span></span>
+<span class="line"><span>┌─────────┐                                            ┌─────────────┐</span></span>
+<span class="line"><span>│         │      (5) 发送请求 (code + client_secret)    |			  |</span></span>
+<span class="line"><span>│         │				client_secret不能泄露			|			  |</span></span>
+<span class="line"><span>│  后端    │ ─────────────────────────────────────────&gt; │   GitHub    │</span></span>
+<span class="line"><span>│ (我们的) │                                            │   服务器     │</span></span>
+<span class="line"><span>│  服务    │ &lt;───────────────────────────────────────── │             │</span></span>
+<span class="line"><span>│         │      (6) 返回 access_token                  │             │</span></span>
+<span class="line"><span>└─────────┘                                            └─────────────┘</span></span>
+<span class="line"><span>     │</span></span>
+<span class="line"><span>     │ (7) 返回 access_token</span></span>
+<span class="line"><span>     ▼</span></span>
+<span class="line"><span>┌─────────┐</span></span>
+<span class="line"><span>│  前端    │</span></span>
+<span class="line"><span>└─────────┘</span></span></code></pre></div><h3 id="graphql" tabindex="-1">graphql <a class="header-anchor" href="#graphql" aria-label="Permalink to &quot;graphql&quot;">​</a></h3><p>请求数据，请求参数类似于 sql 语句，无论请求什么，请求对象固定为同一个网址，很有意思的一个设计思路。</p><p>详细信息参考 <a href="https://docs.github.com/zh/graphql/guides/using-the-graphql-api-for-discussions" target="_blank" rel="noreferrer">使用 GraphQL API 进行讨论</a></p><h2 id="后端选择" tabindex="-1">后端选择 <a class="header-anchor" href="#后端选择" aria-label="Permalink to &quot;后端选择&quot;">​</a></h2><p>选择了 cloudflare 免费的 worker</p><h1 id="具体实现" tabindex="-1">具体实现 <a class="header-anchor" href="#具体实现" aria-label="Permalink to &quot;具体实现&quot;">​</a></h1><h2 id="固定文章对应的讨论" tabindex="-1">固定文章对应的讨论 <a class="header-anchor" href="#固定文章对应的讨论" aria-label="Permalink to &quot;固定文章对应的讨论&quot;">​</a></h2><p>用户第一次评论时再创建文章对应的讨论，这个功能虽然好，但是很麻烦。</p><p>因此选择另一个方法：每有一篇新文章，就自动创建一个对应的讨论。这个写在了 vitepress 构建过程中。</p><div class="language-ts vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang">ts</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>async </span><span>transformPageData</span><span>(pageData) {</span></span>
+<span class="line"><span>    var</span><span> baseUrl </span><span>=</span><span> 'https://mqnu00.github.io/blog'</span></span>
+<span class="line"><span>    const</span><span> githubPath</span><span> =</span><span> '/blog/'</span><span> +</span><span> pageData.filePath</span></span>
+<span class="line"></span>
+<span class="line"><span>    pageData.url </span><span>=</span><span> `${</span><span>baseUrl</span><span>}/${</span><span>pageData</span><span>.</span><span>filePath</span><span>.</span><span>replace</span><span>(</span><span>'.md'</span><span>, </span><span>'.html'</span><span>)</span><span>}`</span></span>
+<span class="line"><span>    //   配置讨论</span></span>
+<span class="line"><span>    if</span><span>(pageData.frontmatter.discussion </span><span>==</span><span> null</span><span> &amp;&amp;</span><span> pageData.title </span><span>!=</span><span> null</span><span> &amp;&amp;</span><span> pageData.title </span><span>!==</span><span> ''</span><span>) {</span></span>
+<span class="line"><span>      console.</span><span>log</span><span>(</span><span>`创建讨论： ${</span><span>pageData</span><span>.</span><span>title</span><span>}`</span><span>)</span></span>
+<span class="line"><span>      const</span><span> discuss</span><span> =</span><span> await</span><span> discussClient.</span><span>createDiscussion</span><span>(</span></span>
+<span class="line"><span>          pageData.title,</span></span>
+<span class="line"><span>          pageData.url,</span></span>
+<span class="line"><span>          process.env.</span><span>VITE_GITHUB_DISCUSS_TYPE_ID</span></span>
+<span class="line"><span>      )</span></span>
+<span class="line"><span>      if</span><span> (discuss) {</span></span>
+<span class="line"><span>        pageData.frontmatter.discussion </span><span>=</span><span> discuss</span></span>
+<span class="line"><span>      } </span><span>else</span><span> {</span></span>
+<span class="line"><span>        throw</span><span> new</span><span> Error</span><span>(</span><span>"创建讨论失败"</span><span>)</span></span>
+<span class="line"><span>      }</span></span>
+<span class="line"><span>    }</span></span>
+<span class="line"></span>
+<span class="line"><span>    // -------------------------</span></span>
+<span class="line"><span>    // 写回 Markdown 文件</span></span>
+<span class="line"><span>    // -------------------------</span></span>
+<span class="line"><span>    const</span><span> mdPath</span><span> =</span><span> path.</span><span>resolve</span><span>(process.</span><span>cwd</span><span>(), </span><span>'blog'</span><span>, pageData.filePath)</span></span>
+<span class="line"><span>    const</span><span> raw</span><span> =</span><span> await</span><span> fs.</span><span>readFile</span><span>(mdPath, </span><span>'utf-8'</span><span>)</span></span>
+<span class="line"></span>
+<span class="line"><span>    const</span><span> parsed</span><span> =</span><span> matter</span><span>(raw)</span></span>
+<span class="line"></span>
+<span class="line"><span>    // 写入 frontmatter</span></span>
+<span class="line"><span>    parsed.data.url </span><span>=</span><span> pageData.url</span></span>
+<span class="line"><span>    if</span><span> (pageData.frontmatter.discussion </span><span>!=</span><span> null</span><span>) parsed.data.discussion </span><span>=</span><span> pageData.frontmatter.discussion</span></span>
+<span class="line"></span>
+<span class="line"><span>    // 重新生成 md 内容</span></span>
+<span class="line"><span>    const</span><span> newContent</span><span> =</span><span> matter.</span><span>stringify</span><span>(parsed.content, parsed.data)</span></span>
+<span class="line"></span>
+<span class="line"><span>    // 写回文件</span></span>
+<span class="line"><span>    await</span><span> fs.</span><span>writeFile</span><span>(mdPath, newContent, </span><span>'utf-8'</span><span>)</span></span>
+<span class="line"><span>  },</span></span></code></pre></div><p>这里要注意重新写入数据会重新触发该文章的从 md 到 html 的构建过程。</p><h2 id="graphql-sdk" tabindex="-1">graphql sdk <a class="header-anchor" href="#graphql-sdk" aria-label="Permalink to &quot;graphql sdk&quot;">​</a></h2><p>用graphql请求数据，实际是发送一串字符串出去，不好维护 graphql语句。</p><p>于是考虑单独创建 graphql文件，有类型提示，也可以像 mssql ssms一样直接执行语句。然后通过 codegen 生成 查询的 sdk。</p></div>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[VitePress中的Markdown扩展功能]]></title>
@@ -235,6 +304,10 @@
           {
             "text": "给文章添加tag并支持搜索索引",
             "link": "/posts/vitepress/article-tag"
+          },
+          {
+            "text": "基于github的discussion为博客添加评论",
+            "link": "/posts/vitepress/blog-comment-by-github-discussion"
           },
           {
             "text": "我的第一篇博客",
