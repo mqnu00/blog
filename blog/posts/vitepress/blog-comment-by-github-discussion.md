@@ -6,7 +6,8 @@ tags:
   - github discussion
   - ouath
   - graphql
-url: 'https://mqnu00.github.io/blog/posts/vitepress/blog-comment-by-github-discussion.html'
+url: >-
+  https://mqnu00.github.io/blog/posts/vitepress/blog-comment-by-github-discussion.html
 discussion:
   id: D_kwDOQdT3Qc4AlvPk
   number: 85
