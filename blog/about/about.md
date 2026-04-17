@@ -20,6 +20,8 @@ discussion:
 import Friend from './Friend.vue'
 </script>
 
+## 博客
+
 <Friend url="https://wcowin.work/" 
         avatar="https://pic2.zhimg.com/100/v2-864dbf5fe2906aae3f5f18b491320a0d_r.jpg" 
         name="Wcowin's Blog"
@@ -27,3 +29,11 @@ import Friend from './Friend.vue'
         introduction=""
 />
 
+## 论坛
+
+<Friend url="https://2libra.com/" 
+        avatar="https://2libra.com/favicon.ico" 
+        name="2Libra"
+        owner="Jimmy"
+        introduction=""
+/>

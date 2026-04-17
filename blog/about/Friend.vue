@@ -1,11 +1,14 @@
 <template>
   <div style="display: flex; flex-direction: column; margin: 20px;">
-    <NCard >
+    <NCard style="border: 1px solid">
         <template #header>
           <div style="display: flex; flex-direction: row; gap: 10px; align-items: center;">
-            <NAvatar :src="avatar"/> 
+            <NAvatar :src="avatar" round/> 
             <a :href="url" class="jump-to-friend" >{{ name }}</a>
           </div>
+        </template>
+        <template #default>
+          <slot></slot>
         </template>
     </NCard>
   </div>
