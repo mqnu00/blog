@@ -92,7 +92,7 @@ export default defineConfig({
         link: url,
         description: data.description,
         content: $('.vp-doc').html() || '',
-        date: data.date ? new Date(data.date) : new Date(),
+        date: moment(data.date || new Date()).utcOffset(-8).toDate()
       })
     }
 
