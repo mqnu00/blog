@@ -3,7 +3,7 @@ name: Deploy VitePress site
 on:
   push:
     branches:
-      - master   # 你开发用的分支
+      - test/build   # 你开发用的分支
 
 jobs:
   deploy:
@@ -20,13 +20,7 @@ jobs:
         run: npm install
 
       - name: Build VitePress site
-        run: npm run docs:build
+        run: npm run docs:test-build
 
       - name: List dist files
         run: ls -R blog/.vitepress/dist
-
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: blog/.vitepress/dist

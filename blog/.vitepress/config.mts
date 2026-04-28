@@ -12,8 +12,10 @@ import {getGithubHistory} from './utils/github/gitHistory.js'
 import dotenv from "dotenv";
 import {GithubDiscussApi} from "./utils/github/discussion"
 import moment from 'moment'
+import { env } from 'node:process'
 
-const mode = process.env.NODE_ENV || 'development'
+const mode = process.env.CUST_ENV || process.env.NODE_ENV || 'development'
+console.log(mode)
 dotenv.config({
   path: path.resolve(process.cwd(), `./blog/.env.${mode}`)
 })
@@ -85,6 +87,7 @@ export default defineConfig({
       if (data.publish === false) continue
 
       const url = `${baseUrl}/${page.replace('.md', '.html')}`
+      const date = typeof data.date === 'string' ? data.date + '+0800' : (data.date || new Date())
 
       feed.addItem({
         title: data.title,
@@ -92,15 +95,20 @@ export default defineConfig({
         link: url,
         description: data.description,
         content: $('.vp-doc').html() || '',
-        date: moment((data.date || new Date()) + '+0800', 'YYYY-MM-DD HH:mm:ssZ').toDate()
+        date: moment(date, 'YYYY-MM-DD HH:mm:ssZ').toDate()
       })
     }
 
     const outDir = siteConfig.outDir
-    await fs.writeFile(path.join(outDir, 'rss.xml'), feed.rss2(), 'utf-8')
+    const rss = feed.rss2()
+    rss.matchAll(/<pubDate>(.*?)<\/pubDate>/g).forEach((match) => {
+      console.log('RSS 中的 pubDate:', match[1])
+    })
+    await fs.writeFile(path.join(outDir, 'rss.xml'), rss, 'utf-8')
 
   },
   async transformPageData(pageData) {
+    if (mode === 'development') return
     var baseUrl = 'https://mqnu00.github.io/blog'
     const githubPath = '/blog/' + pageData.filePath
     const history = await getGithubHistory(

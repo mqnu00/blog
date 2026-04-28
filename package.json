@@ -1,6 +1,7 @@
 {
   "scripts": {
     "docs:dev": "vitepress dev blog",
+    "docs:test-build": "CUST_ENV=development vitepress build blog",
     "docs:build": "vitepress build blog",
     "docs:preview": "vitepress preview blog",
     "codegen:github": "pnpm graphql-codegen --config ./blog/.vitepress/utils/github/graphql/graphql.config.yml "
