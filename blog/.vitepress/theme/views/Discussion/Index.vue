@@ -38,7 +38,7 @@
         </div>
       </template>
       <template #default>
-        <div style="margin-left: 20px; background-color: var(--discuss-bg-color);" class="markdown-body" v-html="md.render(discussion?.body)"/>
+        <div style="margin-left: 20px; background-color: var(--discuss-bg-color);" class="vp-doc" v-html="md.render(discussion?.body)"/>
       </template>
       <template #footer>
         <NCollapse size="large" style="background-color: var(--hint-bg-color); padding-left: 20px; padding-top: 10px; padding-bottom: 10px; padding-right: 20px;" @item-header-click="expandReply">
@@ -51,7 +51,7 @@
                       <NAvatar round size="small" :src="reply?.userInfo?.avatarUrl" style="width: 100%; height: 100%; scale: 2;"/>
                     </template>
                     <span>{{ `${reply?.author?.login}:`  }}</span>
-                    <div style="padding-left: 20px; padding-top: 20px; padding-bottom: 20px; background-color: var(--hint-bg-color);" class="markdown-body" v-html="md.render(reply?.body)"/>
+                    <div style="padding-left: 20px; padding-top: 20px; padding-bottom: 20px; background-color: var(--hint-bg-color);" class="vp-doc" v-html="md.render(reply?.body)"/>
                   </NTimelineItem>
                 </template>
                 <NTimelineItem v-if="discussion?.replies?.loading ?? true">
@@ -122,30 +122,42 @@ import moment from "moment";
 import type {CollapseProps} from 'naive-ui'
 import MarkdownIt from "markdown-it";
 import {useData} from "vitepress";
-import markdownLightUrl from "github-markdown-css/github-markdown-light.css?url";
-import markdownDarkUrl from "github-markdown-css/github-markdown-dark.css?url";
-
+import { BundledLanguage, BundledTheme, createHighlighter, HighlighterGeneric } from 'shiki'  
+  
+const highlighter: Ref<HighlighterGeneric<BundledLanguage, BundledTheme> | null | undefined> = ref()
+const isClient = ref(false)
+onMounted(() => {
+  isClient.value = true
+})
+onMounted(async () => {
+  highlighter.value = await createHighlighter({  
+  themes: ['github-light', 'github-dark'],  
+  langs: ['javascript', 'typescript', 'vue', 'html', 'css']  
+})  
+})
 const message = useMessage()
 const {isDark} = useData()
 const linkElement = ref()
-const md = MarkdownIt({
-  html: true,        // 允许 HTML 标签
-  linkify: true,     // 自动识别 URL 并转换为链接
-  typographer: true, // 优化排版（引号、破折号等）
-  breaks: true,      // 将换行符转换为 <br>
-  xhtmlOut: true     // 使用 XHTML 闭合标签
+const md = computed(() => {
+  return new MarkdownIt({  
+    highlight: function (str, lang) {  
+      if (lang && highlighter.value?.getLoadedLanguages().includes(lang)) {  
+        const theme = isDark.value ? 'github-dark' : 'github-light'
+        const html = highlighter.value?.codeToHtml(str, {  
+          lang,  
+          theme 
+        })  
+        return `<div class="language-${lang}">${html}</div>`  
+      }  
+      return `<div class="language-${lang}"><pre><code>${str}</code></pre>`  
+    },
+    html: true,        // 允许 HTML 标签
+    linkify: true,     // 自动识别 URL 并转换为链接
+    typographer: true, // 优化排版（引号、破折号等）
+    breaks: true,      // 将换行符转换为 <br>
+    xhtmlOut: true,     // 使用 XHTML 闭合标签  
+  })
 })
-watch(() => isDark.value, (newVal) => {
-  if (linkElement.value) {
-    linkElement.value.href = newVal ? markdownDarkUrl : markdownLightUrl
-  } else {
-    const link = document.createElement('link')
-    link.rel = 'stylesheet'
-    link.href = newVal ? markdownDarkUrl : markdownLightUrl
-    document.head.appendChild(link)
-    linkElement.value = link
-  }
-}, { immediate: true })
 
 type DiscussionType = NonNullable<
   NonNullable<GetDiscussionByNumberQuery["repository"]>["discussion"]
