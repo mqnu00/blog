@@ -10,7 +10,7 @@ console.log('输入日期:', testDate)
 console.log('输入日期实际含义: 北京时间 (UTC+8)\n')
 
 // ✅ 正确做法 - 明确指定输入字符串是北京时间
-const correctDate = moment(testDate, 'Asia/Shanghai')
+const correctDate = moment(testDate + '+0800', 'YYYY-MM-DD HH:mm:ssZ')
 
 console.log('✅ 正确做法 (明确输入为北京时间):')
 console.log('   原始输入:', testDate)
