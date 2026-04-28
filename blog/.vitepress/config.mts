@@ -88,6 +88,7 @@ export default defineConfig({
 
       const url = `${baseUrl}/${page.replace('.md', '.html')}`
       const date = typeof data.date === 'string' ? data.date + '+0800' : (data.date || new Date())
+      console.log(date)
 
       feed.addItem({
         title: data.title,
