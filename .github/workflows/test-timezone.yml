@@ -5,7 +5,9 @@ on:
     paths:
       - 'blog/.vitepress/config.mts'
       - 'test-rss-timezone.mjs'
-  pull_request:
+  push:
+    branches:
+      - timezone-test  # 你开发用的分支
 
 jobs:
   test:
