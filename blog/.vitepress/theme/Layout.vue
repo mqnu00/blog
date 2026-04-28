@@ -23,7 +23,8 @@ const theme = computed(() => {
 const cssVars = computed(() => {
   if (isClient.value) {
     return {
-      '--hint-bg-color': isDark.value ? 'rgb(70, 70, 70)' : 'rgb(233, 233, 238)',
+      '--hint-bg-color': isDark.value ? 'rgb(91, 91, 91)' : 'rgb(233, 233, 238)',
+      '--discuss-bg-color': isDark.value ? 'rgb(0, 0, 0)' : 'rgb(255, 255, 255)',
       '--hint-content-bg-hover': isDark.value ? 'rgb(95, 95, 95)' : 'rgb(233, 233, 238)',
     }
   }

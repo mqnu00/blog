@@ -24,7 +24,7 @@
     <NStatistic label="评论数" :value="discussionList?.comments.totalCount" />
   </div>
   <template v-for="(discussion, index) in discussionList?.comments.nodes">
-    <NCard class="discussion">
+    <NCard class="discussion" style="background-color: var(--discuss-bg-color);">
       <template #header>
         <div style="display: flex; flex-direction: row; gap: 10px; font-size: 14px;">
           <NAvatar round size="small" :src="discussion?.userInfo?.avatarUrl"/>
@@ -38,7 +38,7 @@
         </div>
       </template>
       <template #default>
-        <p style="margin-left: 20px;">{{ discussion?.body }}</p>
+        <div style="margin-left: 20px; background-color: var(--discuss-bg-color);" class="markdown-body" v-html="md.render(discussion?.body)"/>
       </template>
       <template #footer>
         <NCollapse size="large" style="background-color: var(--hint-bg-color); padding-left: 20px; padding-top: 10px; padding-bottom: 10px; padding-right: 20px;" @item-header-click="expandReply">
@@ -51,9 +51,7 @@
                       <NAvatar round size="small" :src="reply?.userInfo?.avatarUrl" style="width: 100%; height: 100%; scale: 2;"/>
                     </template>
                     <span>{{ `${reply?.author?.login}:`  }}</span>
-                    <div style="padding-left: 20px; padding-top: 20px; padding-bottom: 20px;">
-                      {{ `${reply?.body}` }}
-                    </div>
+                    <div style="padding-left: 20px; padding-top: 20px; padding-bottom: 20px; background-color: var(--hint-bg-color);" class="markdown-body" v-html="md.render(reply?.body)"/>
                   </NTimelineItem>
                 </template>
                 <NTimelineItem v-if="discussion?.replies?.loading ?? true">
@@ -122,8 +120,32 @@ import { GithubUserApi } from "@blog/.vitepress/utils/github/user";
 import {ChevronCircleDown20Regular, ReceiptBag20Filled} from '@vicons/fluent'
 import moment from "moment";
 import type {CollapseProps} from 'naive-ui'
+import MarkdownIt from "markdown-it";
+import {useData} from "vitepress";
+import markdownLightUrl from "github-markdown-css/github-markdown-light.css?url";
+import markdownDarkUrl from "github-markdown-css/github-markdown-dark.css?url";
 
 const message = useMessage()
+const {isDark} = useData()
+const linkElement = ref()
+const md = MarkdownIt({
+  html: true,        // 允许 HTML 标签
+  linkify: true,     // 自动识别 URL 并转换为链接
+  typographer: true, // 优化排版（引号、破折号等）
+  breaks: true,      // 将换行符转换为 <br>
+  xhtmlOut: true     // 使用 XHTML 闭合标签
+})
+watch(() => isDark.value, (newVal) => {
+  if (linkElement.value) {
+    linkElement.value.href = newVal ? markdownDarkUrl : markdownLightUrl
+  } else {
+    const link = document.createElement('link')
+    link.rel = 'stylesheet'
+    link.href = newVal ? markdownDarkUrl : markdownLightUrl
+    document.head.appendChild(link)
+    linkElement.value = link
+  }
+}, { immediate: true })
 
 type DiscussionType = NonNullable<
   NonNullable<GetDiscussionByNumberQuery["repository"]>["discussion"]
