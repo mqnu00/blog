@@ -4,7 +4,7 @@
         <title>广习习的博客</title>
         <link>https://mqnu00.github.io/blog/</link>
         <description>分享技术与生活的个人博客</description>
-        <lastBuildDate>Tue, 28 Apr 2026 03:02:52 GMT</lastBuildDate>
+        <lastBuildDate>Tue, 28 Apr 2026 05:47:27 GMT</lastBuildDate>
         <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
         <generator>https://github.com/jpmonette/feed</generator>
         <language>en-US</language>
@@ -13,14 +13,14 @@
             <title><![CDATA[在win11开发兼容ie的网页]]></title>
             <link>https://mqnu00.github.io/blog//posts/frontend/develop-ie-win11/develop-ie-win11.html</link>
             <guid isPermaLink="false">https://mqnu00.github.io/blog//posts/frontend/develop-ie-win11/develop-ie-win11.html</guid>
-            <pubDate>Thu, 27 Nov 2025 11:29:08 GMT</pubDate>
+            <pubDate>Thu, 27 Nov 2025 03:29:00 GMT</pubDate>
             <content:encoded><![CDATA[<div><h1 id="目标是什么" tabindex="-1">目标是什么 <a class="header-anchor" href="#目标是什么" aria-label="Permalink to &quot;目标是什么&quot;">​</a></h1><p>这里指的是语法的兼容，目标版本是ie8。我平时语法用到的比如</p><ul><li><code>Arrow functions () =&gt; {}</code></li><li><code>Optional chaining operator (?.)</code></li></ul><p><!----></p><p>可以在 <a href="https://caniuse.com/?search=%3F." target="_blank" rel="noreferrer">语法搜索</a> 查看语法兼容情况</p><h1 id="开发环境搭建" tabindex="-1">开发环境搭建 <a class="header-anchor" href="#开发环境搭建" aria-label="Permalink to &quot;开发环境搭建&quot;">​</a></h1><p>在 win11 系统，目前来说最简单的方法是使用 <code>edge</code> 的 <code>ie兼容模式</code> ，缺点是不确定使用的是什么版本的。</p><p>有一个方法可以调出ie的原生软件页面。可以参考 <a href="https://www.jianshu.com/p/b9e129ec349b" target="_blank" rel="noreferrer">Win11 打开 IE 浏览器 - 简书</a></p><p>总结一下：</p><ul><li>在 edge 允许启用 ie兼容模式</li><li>创建 vbs 脚本 <code>CreateObject("InternetExplorer.Application").Visible=true</code></li><li>打开 ie 浏览器 F12，选择 ie8 仿真模式</li></ul><p><!----></p><h2 id="ie浏览器问题" tabindex="-1">IE浏览器问题 <a class="header-anchor" href="#ie浏览器问题" aria-label="Permalink to &quot;IE浏览器问题&quot;">​</a></h2><ol><li><a href="https://learn.microsoft.com/zh-cn/answers/questions/5560234/win11-ie" target="_blank" rel="noreferrer">升级win11后,IE调试工具-网络-网络集合代理无法启动</a>，<a href="https://juejin.cn/post/7447807675273347082" target="_blank" rel="noreferrer">win11 24H2删除了老的依赖，参考链接评论</a></li></ol></div>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[最近开发时遇到的问题(var和async)]]></title>
             <link>https://mqnu00.github.io/blog//posts/frontend/problem-for-var-and-async/problem-for-var-and-async.html</link>
             <guid isPermaLink="false">https://mqnu00.github.io/blog//posts/frontend/problem-for-var-and-async/problem-for-var-and-async.html</guid>
-            <pubDate>Fri, 26 Dec 2025 17:16:08 GMT</pubDate>
+            <pubDate>Fri, 26 Dec 2025 09:16:00 GMT</pubDate>
             <content:encoded><![CDATA[<div><h1 id="环境" tabindex="-1">环境 <a class="header-anchor" href="#环境" aria-label="Permalink to &quot;环境&quot;">​</a></h1><p>注意环境是ie8，常用的现代浏览器的语法是没有的，比如：</p><ul><li>let，const(<a href="https://www.w3schools.com/JS/js_let.asp?utm_source=copilot.com" target="_blank" rel="noreferrer">es6开始支持</a>)。只能使用 <code>var</code></li><li><a href="https://www.w3schools.com/Js/js_es6.asp" target="_blank" rel="noreferrer">promise</a>，<a href="https://www.w3schools.com/Js/js_2017.asp" target="_blank" rel="noreferrer">async/await</a>。转而使用<code>function callback</code></li></ul><h1 id="var存在的问题" tabindex="-1">var存在的问题 <a class="header-anchor" href="#var存在的问题" aria-label="Permalink to &quot;var存在的问题&quot;">​</a></h1><div class="language-js vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang">js</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>// 正常写法</span></span>
 <span class="line"><span>for</span><span> (</span><span>var</span><span> i </span><span>=</span><span> 0</span><span>; i </span><span>&lt;</span><span> 3</span><span>; i</span><span>++</span><span>) {</span></span>
 <span class="line"><span>  setTimeout</span><span>(() </span><span>=&gt;</span><span> console.</span><span>log</span><span>(</span><span>"var i ="</span><span>, i), </span><span>0</span><span>);</span></span>
@@ -56,14 +56,14 @@
             <title><![CDATA[2025总结]]></title>
             <link>https://mqnu00.github.io/blog//posts/summary/2025总结.html</link>
             <guid isPermaLink="false">https://mqnu00.github.io/blog//posts/summary/2025总结.html</guid>
-            <pubDate>Wed, 31 Dec 2025 16:55:08 GMT</pubDate>
+            <pubDate>Wed, 31 Dec 2025 08:55:00 GMT</pubDate>
             <content:encoded><![CDATA[<div><h1 id="时间线" tabindex="-1">时间线 <a class="header-anchor" href="#时间线" aria-label="Permalink to &quot;时间线&quot;">​</a></h1><p>2月，离开实习公司，在杭州待了2个月左右，准备春招面试。</p><p>4月，春招结尾，收到了1份offer。由于实习公司的经历+春招的打击，我对自己不是很自信，决定提前实习了解一下这个公司。</p><p>5月，劳动节假期过后开始实习</p><p>6月，请假一周，回学校，毕业设计答辩，和朋友聚了聚，和家里见了面。</p><p>7月，入职，试用期。</p><p>12月，收到试用通过结果。</p><h1 id="总结" tabindex="-1">总结 <a class="header-anchor" href="#总结" aria-label="Permalink to &quot;总结&quot;">​</a></h1><p>代码和业务在一起才有价值。</p><p>公司的大哥在对需求的时候常说的一句：没有什么是做不到的，无非是多花点时间罢了，等我排期。</p><p>review我的代码常说的一句：不要想的那么复杂，接口功能拆的更细分点，不然你后面怎么维护？</p></div>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[给文章添加tag并支持搜索索引]]></title>
             <link>https://mqnu00.github.io/blog//posts/vitepress/article-tag.html</link>
             <guid isPermaLink="false">https://mqnu00.github.io/blog//posts/vitepress/article-tag.html</guid>
-            <pubDate>Wed, 10 Dec 2025 15:19:08 GMT</pubDate>
+            <pubDate>Wed, 10 Dec 2025 07:19:00 GMT</pubDate>
             <content:encoded><![CDATA[<div><h1 id="添加tag" tabindex="-1">添加TAG <a class="header-anchor" href="#添加tag" aria-label="Permalink to &quot;添加TAG&quot;">​</a></h1><p>文档的元数据可以通过<code>-- --</code>在文档开头标识。</p><p>类似于：</p><div class="language- vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang"></span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>---</span></span>
 <span class="line"><span>title: 如何给文章添加tag并支持被VitePress自带的本地搜索索引</span></span>
 <span class="line"><span>date: 2025-12-10 15:19</span></span>
@@ -114,7 +114,7 @@
             <title><![CDATA[基于github的discussion为博客添加评论]]></title>
             <link>https://mqnu00.github.io/blog//posts/vitepress/blog-comment-by-github-discussion.html</link>
             <guid isPermaLink="false">https://mqnu00.github.io/blog//posts/vitepress/blog-comment-by-github-discussion.html</guid>
-            <pubDate>Thu, 09 Apr 2026 16:16:08 GMT</pubDate>
+            <pubDate>Thu, 09 Apr 2026 08:16:00 GMT</pubDate>
             <content:encoded><![CDATA[<div><h1 id="前期调研" tabindex="-1">前期调研 <a class="header-anchor" href="#前期调研" aria-label="Permalink to &quot;前期调研&quot;">​</a></h1><h2 id="参考已有的项目" tabindex="-1">参考已有的项目 <a class="header-anchor" href="#参考已有的项目" aria-label="Permalink to &quot;参考已有的项目&quot;">​</a></h2><p>实际上这样想法已经有人实现，并且已封装成简单配置即可使用的依赖，比如 <a href="https://github.com/giscus/giscus" target="_blank" rel="noreferrer">giscus</a>。</p><p>但是分析了相关功能，其中一个功能 <code>可以不为文章创建 discussion，等到有人评论再创建 discussion</code> 让我感到疑惑。</p><p>因为使用的是静态网页，并且想要创建 <code>github discussion</code> 是需要 <code>discussion id</code> 和 <code>access_token</code> 去请求 API 的。ID 不可能说有人创建评论就重新构建静态网页然后重新写入；token 也不建议保存在静态网页，因为不论怎么混淆也是能找到的。当然 gisgus 也不是把 token 保存在前端，而是走他们自己的 <code>github bot</code> 帮你创建评论，而它讨论的 API 是可以重复调用的，我有提 <a href="https://github.com/giscus/giscus/issues/1702" target="_blank" rel="noreferrer">重复创建讨论</a> 询问了一下，确实理解是设计需要。</p><p>因为不希望自己项目的评论区随地大小便，所以我决定自己写评论模块。</p><h2 id="查看-github-graphql-和-oauth-api" tabindex="-1">查看 github graphql 和 oauth api <a class="header-anchor" href="#查看-github-graphql-和-oauth-api" aria-label="Permalink to &quot;查看 github graphql 和 oauth api&quot;">​</a></h2><h3 id="oauth-api" tabindex="-1">oauth api <a class="header-anchor" href="#oauth-api" aria-label="Permalink to &quot;oauth api&quot;">​</a></h3><p>由于是静态网页，纯前端项目，我开始寻找有没有无需后端就能通过 oauth 并且 github 支持的协议。当然一开始找到了，是 <a href="https://github.blog/changelog/2025-07-14-pkce-support-for-oauth-and-github-app-authentication/" target="_blank" rel="noreferrer"><code>PKCE</code></a> 。</p><p>但是尝试跑通失败，最重要的一点是 github 验证不支持跨域，必须要有后端去转发请求。那这还不如正常的去走 ouath 呢。</p><p>正常走 oauth 是：</p><div class="language-text vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang">text</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>┌─────────┐      (1) 请求授权 (scope, client_id等)       ┌─────────────┐</span></span>
 <span class="line"><span>│         │ ─────────────────────────────────────────&gt; │             │</span></span>
 <span class="line"><span>│  前端    │                                            │   GitHub    │</span></span>
@@ -183,7 +183,7 @@
             <title><![CDATA[VitePress中的Markdown扩展功能]]></title>
             <link>https://mqnu00.github.io/blog//posts/vitepress/markdown-extensions.html</link>
             <guid isPermaLink="false">https://mqnu00.github.io/blog//posts/vitepress/markdown-extensions.html</guid>
-            <pubDate>Invalid Date</pubDate>
+            <pubDate>Fri, 17 Jan 2025 00:00:00 GMT</pubDate>
             <content:encoded><![CDATA[<div><h1 id="vitepress中的markdown扩展功能" tabindex="-1">VitePress中的Markdown扩展功能 <a class="header-anchor" href="#vitepress中的markdown扩展功能" aria-label="Permalink to &quot;VitePress中的Markdown扩展功能&quot;">​</a></h1><p>在使用VitePress搭建博客时，了解其内置的Markdown扩展功能是非常有帮助的。本文将详细介绍一些常用的扩展功能。</p><h2 id="语法高亮" tabindex="-1">语法高亮 <a class="header-anchor" href="#语法高亮" aria-label="Permalink to &quot;语法高亮&quot;">​</a></h2><p>VitePress提供由 <a href="https://github.com/shikijs/shiki" target="_blank" rel="noreferrer">Shiki</a> 驱动的语法高亮，还具有行高亮等附加功能：</p><p><strong>示例代码</strong></p><div class="language-md vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang">md</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>```js{4}</span></span>
 <span class="line"><span>export</span><span> default</span><span> {</span></span>
 <span class="line"><span>  data</span><span> () {</span></span>
@@ -222,14 +222,14 @@
             <title><![CDATA[我的第一篇博客]]></title>
             <link>https://mqnu00.github.io/blog//posts/vitepress/my-first-post.html</link>
             <guid isPermaLink="false">https://mqnu00.github.io/blog//posts/vitepress/my-first-post.html</guid>
-            <pubDate>Invalid Date</pubDate>
+            <pubDate>Wed, 15 Jan 2025 00:00:00 GMT</pubDate>
             <content:encoded><![CDATA[<div><h1 id="我的第一篇博客" tabindex="-1">我的第一篇博客 <a class="header-anchor" href="#我的第一篇博客" aria-label="Permalink to &quot;我的第一篇博客&quot;">​</a></h1><h2 id="为什么选择vitepress" tabindex="-1">为什么选择VitePress <a class="header-anchor" href="#为什么选择vitepress" aria-label="Permalink to &quot;为什么选择VitePress&quot;">​</a></h2><p>VitePress是一个极简的静态站点生成器，它基于Vue 3和Vite，具有以下优点：</p><ul><li>快速的热更新</li><li>极小的打包体积</li><li>优秀的Markdown支持</li><li>友好的主题定制能力</li></ul><h2 id="未来规划" tabindex="-1">未来规划 <a class="header-anchor" href="#未来规划" aria-label="Permalink to &quot;未来规划&quot;">​</a></h2><p>在未来的博客中，我会分享：</p><ul><li>前端技术的最新动态</li><li>Vue.js开发实践</li><li>性能优化技巧</li><li>工程化经验</li></ul><p>希望我的分享对你有所帮助！</p></div>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[VitePress运行时API详解]]></title>
             <link>https://mqnu00.github.io/blog//posts/vitepress/runtime-api-examples.html</link>
             <guid isPermaLink="false">https://mqnu00.github.io/blog//posts/vitepress/runtime-api-examples.html</guid>
-            <pubDate>Invalid Date</pubDate>
+            <pubDate>Sat, 18 Jan 2025 00:00:00 GMT</pubDate>
             <content:encoded><![CDATA[<div><h1 id="vitepress运行时api详解" tabindex="-1">VitePress运行时API详解 <a class="header-anchor" href="#vitepress运行时api详解" aria-label="Permalink to &quot;VitePress运行时API详解&quot;">​</a></h1><p>本文将详细介绍VitePress提供的运行时API，这些API可以帮助我们更好地控制页面行为和获取站点数据。</p><h2 id="usedata-api" tabindex="-1">useData() API <a class="header-anchor" href="#usedata-api" aria-label="Permalink to &quot;useData() API&quot;">​</a></h2><p><code>useData()</code> 是VitePress提供的主要运行时API，可用于访问当前页面的站点、主题和页面数据。它在 <code>.md</code> 和 <code>.vue</code> 文件中都能正常工作：</p><div class="language-md vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang">md</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>&lt;script setup&gt;</span></span>
 <span class="line"><span>import { useData } from 'vitepress'</span></span>
 <span class="line"></span>
@@ -437,7 +437,7 @@
             <title><![CDATA[VitePress使用技巧]]></title>
             <link>https://mqnu00.github.io/blog//posts/vitepress/vitepress-tips.html</link>
             <guid isPermaLink="false">https://mqnu00.github.io/blog//posts/vitepress/vitepress-tips.html</guid>
-            <pubDate>Invalid Date</pubDate>
+            <pubDate>Thu, 16 Jan 2025 00:00:00 GMT</pubDate>
             <content:encoded><![CDATA[<div><h1 id="vitepress使用技巧" tabindex="-1">VitePress使用技巧 <a class="header-anchor" href="#vitepress使用技巧" aria-label="Permalink to &quot;VitePress使用技巧&quot;">​</a></h1><p>在这篇文章中，我想分享一些使用VitePress的实用技巧。</p><h2 id="markdown扩展功能" tabindex="-1">Markdown扩展功能 <a class="header-anchor" href="#markdown扩展功能" aria-label="Permalink to &quot;Markdown扩展功能&quot;">​</a></h2><p>VitePress提供了丰富的Markdown扩展功能：</p><h3 id="代码块高亮" tabindex="-1">代码块高亮 <a class="header-anchor" href="#代码块高亮" aria-label="Permalink to &quot;代码块高亮&quot;">​</a></h3><div class="language- vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang"></span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>```js</span></span>
 <span class="line"><span>export default {</span></span>
 <span class="line"><span>  name: "MyComponent",</span></span>
