@@ -2,10 +2,6 @@ name: Test Timezone
 
 on:
   push:
-    paths:
-      - 'blog/.vitepress/config.mts'
-      - 'test-rss-timezone.mjs'
-  push:
     branches:
       - timezone-test  # 你开发用的分支
 
