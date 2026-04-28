@@ -3,7 +3,8 @@
     "docs:dev": "vitepress dev blog",
     "docs:build": "vitepress build blog",
     "docs:preview": "vitepress preview blog",
-    "codegen:github": "pnpm graphql-codegen --config ./blog/.vitepress/utils/github/graphql/graphql.config.yml "
+    "codegen:github": "pnpm graphql-codegen --config ./blog/.vitepress/utils/github/graphql/graphql.config.yml ",
+    "test:timezone": "node ./tests/test-rss-timezone.mjs"
   },
   "devDependencies": {
     "@graphql-codegen/cli": "^6.2.1",
