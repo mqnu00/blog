@@ -85,6 +85,9 @@ export default defineConfig({
       if (data.publish === false) continue
 
       const url = `${baseUrl}/${page.replace('.md', '.html')}`
+      const date = typeof data.date === 'string' ? data.date + '+0800' : (data.date || new Date())
+      console.log(date)
+      console.log(moment(date, 'YYYY-MM-DD HH:mmZ').toDate())
 
       feed.addItem({
         title: data.title,
@@ -92,12 +95,16 @@ export default defineConfig({
         link: url,
         description: data.description,
         content: $('.vp-doc').html() || '',
-        date: moment((data.date || new Date()) + '+0800', 'YYYY-MM-DD HH:mm:ssZ').toDate()
+        date: moment(date, 'YYYY-MM-DD HH:mmZ').toDate()
       })
     }
 
     const outDir = siteConfig.outDir
-    await fs.writeFile(path.join(outDir, 'rss.xml'), feed.rss2(), 'utf-8')
+    const rss = feed.rss2()
+    rss.matchAll(/<pubDate>(.*?)<\/pubDate>/g).forEach((match) => {
+      console.log('RSS 中的 pubDate:', match[1])
+    })
+    await fs.writeFile(path.join(outDir, 'rss.xml'), rss, 'utf-8')
 
   },
   async transformPageData(pageData) {
