@@ -89,6 +89,7 @@ export default defineConfig({
       const url = `${baseUrl}/${page.replace('.md', '.html')}`
       const date = typeof data.date === 'string' ? data.date + '+0800' : (data.date || new Date())
       console.log(date)
+      console.log(moment(date, 'YYYY-MM-DD HH:mmZ').toDate())
 
       feed.addItem({
         title: data.title,
@@ -96,7 +97,7 @@ export default defineConfig({
         link: url,
         description: data.description,
         content: $('.vp-doc').html() || '',
-        date: moment(date, 'YYYY-MM-DD HH:mm:ssZ').toDate()
+        date: moment(date, 'YYYY-MM-DD HH:mmZ').toDate()
       })
     }
 
