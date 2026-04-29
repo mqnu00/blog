@@ -73,6 +73,7 @@ import { dateZhCN, GlobalComponentConfig, GlobalThemeOverrides, NButton, NConfig
 import { GithubOauthClient } from '../utils/github/oauth.js'
 import type { CreateDiscussionMutation } from "@blog/.vitepress/utils/github/graphql/github"
 import Discussion from '@blog/.vitepress/theme/views/Discussion/Index.vue'
+import { GithubDiscussApi } from '../utils/github/discussion.js'
 const { page, frontmatter} = useData()
 const discussion = computed(() => {
   return frontmatter.value.discussion as NonNullable<
@@ -101,8 +102,23 @@ async function githubOauth () {
 }
 
 if (typeof window !== 'undefined') {
-  watch(() => localStorage.getItem('access_token'), (newVal: string) => {
-    access_token.value = newVal
+  watch(() => localStorage.getItem('access_token'), (newVal: string | null) => {
+    if (newVal != null && newVal !== '') {
+      const testClient = new GithubDiscussApi(
+        newVal,
+        import.meta.env.VITE_GITHUB_DISCUSS_OWNER,
+        import.meta.env.VITE_GITHUB_DISCUSS_REP,
+        import.meta.env.VITE_GITHUB_REPO_ID,
+      )
+      testClient.testToken().then((res) => {
+        if (res) {
+          access_token.value = newVal
+        } else {
+          access_token.value = null
+          localStorage.removeItem('access_token')
+        }
+      })
+    }
   }, {immediate: true})
 }
 </script>
