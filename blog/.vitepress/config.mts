@@ -77,6 +77,7 @@ export default defineConfig({
       // $('[class]').removeAttr('class') 
       // $('[id]').removeAttr('id') 
       $('[style]').removeAttr('style') 
+      $('button.copy[title="Copy Code"]').remove()
       // 删除不需要的标签 
       // $('script, style, link, meta, nav, footer').remove()
 
