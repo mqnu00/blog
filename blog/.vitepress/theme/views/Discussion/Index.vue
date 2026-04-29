@@ -297,6 +297,7 @@ async function sendReply (commentIndex: number) {
   const comments = discussionList.value?.comments.nodes!
   if (!comments[commentIndex]?.replyContent || comments[commentIndex]?.replyContent === '') {
     message.error("回复内容为空！")
+    return 
   }
   if (comments[commentIndex]?.id) {
     sendReplyLoading.value = true
