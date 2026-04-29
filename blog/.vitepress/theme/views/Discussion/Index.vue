@@ -1,12 +1,12 @@
 <template>
-  <NCard style="height: 300px;">
+  <NCard style="height: auto;">
     <template #header>
       评论
     </template>
     <template #default>
-      <NSkeleton height="100%" size="large" v-if="loading === true" />
+      <NSkeleton size="large" v-if="loading === true" />
       <template v-else>
-        <NInput style="height: 100%" type="textarea" v-model:value="commentContent"/>
+        <InputBox v-model:value="commentContent"/>
       </template>
     </template>
     <template #footer>
@@ -80,7 +80,7 @@
                 <template #default>
                   <NSkeleton height="100%" size="large" v-if="loading === true" />
                   <template v-else>
-                    <NInput style="height: 100%" type="textarea" v-model:value="discussion!.replyContent"/>
+                    <InputBox v-model:commentContent="discussion!.replyContent"/>
                   </template>
                 </template>
                 <template #footer>
@@ -123,6 +123,7 @@ import type {CollapseProps} from 'naive-ui'
 import MarkdownIt from "markdown-it";
 import {useData} from "vitepress";
 import { BundledLanguage, BundledTheme, createHighlighter, HighlighterGeneric } from 'shiki'  
+import InputBox from "./InputBox.vue";
   
 const highlighter: Ref<HighlighterGeneric<BundledLanguage, BundledTheme> | null | undefined> = ref()
 const isClient = ref(false)
@@ -157,6 +158,7 @@ const md = computed(() => {
     xhtmlOut: true,     // 使用 XHTML 闭合标签  
   })
 })
+provide('md', md)
 
 type DiscussionType = NonNullable<
   NonNullable<GetDiscussionByNumberQuery["repository"]>["discussion"]
@@ -295,6 +297,7 @@ async function sendReply (commentIndex: number) {
   const comments = discussionList.value?.comments.nodes!
   if (!comments[commentIndex]?.replyContent || comments[commentIndex]?.replyContent === '') {
     message.error("回复内容为空！")
+    return 
   }
   if (comments[commentIndex]?.id) {
     sendReplyLoading.value = true
