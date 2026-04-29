@@ -38,7 +38,7 @@
         </div>
       </template>
       <template #default>
-        <div style="margin-left: 20px; background-color: var(--discuss-bg-color);" class="vp-doc" v-html="md.render(discussion?.body)"/>
+        <div style="margin-left: 20px; background-color: var(--discuss-bg-color);" class="vp-doc" v-html="md.render(discussion?.body || '')"/>
       </template>
       <template #footer>
         <NCollapse size="large" style="background-color: var(--hint-bg-color); padding-left: 20px; padding-top: 10px; padding-bottom: 10px; padding-right: 20px;" @item-header-click="expandReply">
@@ -51,7 +51,7 @@
                       <NAvatar round size="small" :src="reply?.userInfo?.avatarUrl" style="width: 100%; height: 100%; scale: 2;"/>
                     </template>
                     <span>{{ `${reply?.author?.login}:`  }}</span>
-                    <div style="padding-left: 20px; padding-top: 20px; padding-bottom: 20px; background-color: var(--hint-bg-color);" class="vp-doc" v-html="md.render(reply?.body)"/>
+                    <div style="padding-left: 20px; padding-top: 20px; padding-bottom: 20px; background-color: var(--hint-bg-color);" class="vp-doc" v-html="md.render(reply?.body || '')"/>
                   </NTimelineItem>
                 </template>
                 <NTimelineItem v-if="discussion?.replies?.loading ?? true">
@@ -137,7 +137,6 @@ onMounted(async () => {
 })
 const message = useMessage()
 const {isDark} = useData()
-const linkElement = ref()
 const md = computed(() => {
   return new MarkdownIt({  
     highlight: function (str, lang) {  
