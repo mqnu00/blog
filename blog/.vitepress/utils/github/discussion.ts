@@ -20,6 +20,21 @@ export class GithubDiscussApi {
         this.repoId = repoId;
     }
 
+    async testToken() {
+        try {
+            const res = await this.sdk.GetDiscussionCount({
+                owner: this.owner,
+                repo: this.repo,
+            });
+            return true;
+        } catch (err) {
+            if (err && typeof err === 'object') {
+                const httpError = err as { response?: { status?: number } };
+                return false
+            }
+        }
+    }
+
     async getDiscussionCount() {
         const res = await this.sdk.GetDiscussionCount({
             owner: this.owner,
