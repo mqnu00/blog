@@ -29,7 +29,8 @@
     "blog/**/*.vue",
     "**/*.ts",
     "**/*.d.ts",
-    ".vitepress/**/*"
+    ".vitepress/**/*",
+    "*.js"
   ],
   "exclude": [
     "node_modules",
