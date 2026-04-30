@@ -3,7 +3,10 @@
     "docs:dev": "vitepress dev blog",
     "docs:build": "vitepress build blog",
     "docs:preview": "vitepress preview blog",
-    "codegen:github": "pnpm graphql-codegen --config ./blog/.vitepress/utils/github/graphql/graphql.config.yml "
+    "codegen:github": "pnpm graphql-codegen --config ./blog/.vitepress/utils/github/graphql/graphql.config.yml",
+    "eslint": "npx eslint --fix ./blog",
+    "stylelint": "npx stylelint --fix ./blog",
+    "prettier": "npx prettier --wwrite ./blog"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -13,6 +16,7 @@
     "@graphql-codegen/typescript-operations": "^5.0.9",
     "@types/node": "^24.10.1",
     "eslint": "^10.2.1",
+    "eslint-flat-config-gitignore": "^3.1.0",
     "eslint-import-resolver-typescript": "^4.4.4",
     "eslint-plugin-import-x": "^4.16.2",
     "eslint-plugin-vue": "^10.9.0",
