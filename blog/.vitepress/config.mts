@@ -1,35 +1,35 @@
-import type {MarkdownRenderer} from 'vitepress'
-import {defineConfig} from 'vitepress'
+import type { MarkdownRenderer } from 'vitepress'
+import { defineConfig } from 'vitepress'
 import Components from 'unplugin-vue-components/vite'
-import {NaiveUiResolver} from 'unplugin-vue-components/resolvers'
+import { NaiveUiResolver } from 'unplugin-vue-components/resolvers'
 import AutoImport from 'unplugin-auto-import/vite'
-import {Feed} from 'feed'
+import { Feed } from 'feed'
 import fs from 'fs/promises'
-import path, {resolve} from 'node:path'
+import path, { resolve } from 'node:path'
 import matter from 'gray-matter'
-import {load} from 'cheerio'
-import {getGithubHistory} from './utils/github/gitHistory.js'
-import dotenv from "dotenv";
-import {GithubDiscussApi} from "./utils/github/discussion"
+import { load } from 'cheerio'
+import { getGithubHistory } from './utils/github/gitHistory'
+import dotenv from 'dotenv'
+import { GithubDiscussApi } from './utils/github/discussion'
 import moment from 'moment'
 
 const mode = process.env.NODE_ENV || 'development'
 dotenv.config({
-  path: path.resolve(process.cwd(), `./blog/.env.${mode}`)
+  path: path.resolve(process.cwd(), `./blog/.env.${mode}`),
 })
 const discussClient = new GithubDiscussApi(
-    process.env.GITHUB_TOKEN,
-    process.env.VITE_GITHUB_DISCUSS_OWNER,
-    process.env.VITE_GITHUB_DISCUSS_REP,
-    process.env.VITE_GITHUB_REPO_ID,
-    process.env.Local === '1' ? process.env.VITE_GITHUB_PROXY : null
+  process.env.GITHUB_TOKEN,
+  process.env.VITE_GITHUB_DISCUSS_OWNER,
+  process.env.VITE_GITHUB_DISCUSS_REP,
+  process.env.VITE_GITHUB_REPO_ID,
+  process.env.Local === '1' ? process.env.VITE_GITHUB_PROXY : null,
 )
 
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
   base: '/blog/',
-  title: "广习习的博客",
-  description: "分享技术与生活的个人博客",
+  title: '广习习的博客',
+  description: '分享技术与生活的个人博客',
   markdown: {
     config: (md: MarkdownRenderer) => {
       // 保存默认的 image 渲染
@@ -48,19 +48,19 @@ export default defineConfig({
         // 这里替换成 n-image
         return `<ClientOnly><n-image src="${src}" alt="${alt}"/></ClientOnly>`
       }
-    }
+    },
   },
   async buildEnd(siteConfig) {
-    var baseUrl = 'https://mqnu00.github.io/blog/'
+    const baseUrl = 'https://mqnu00.github.io/blog/'
     const feed = new Feed({
       title: siteConfig.site.title,
       description: siteConfig.site.description,
       id: baseUrl,
       link: baseUrl,
       language: siteConfig.site.lang,
-      copyright: '© 2025 广习习'
+      copyright: '© 2025 广习习',
     })
-    
+
     const pageRoot = path.resolve(__dirname, '..')
     // 遍历所有页面
     for (const page of siteConfig.pages) {
@@ -73,20 +73,19 @@ export default defineConfig({
       const html = await fs.readFile(htmlPath, 'utf-8')
 
       const $ = load(html)
-      // 删除所有 class / id / style 
-      // $('[class]').removeAttr('class') 
-      // $('[id]').removeAttr('id') 
-      $('[style]').removeAttr('style') 
+      // 删除所有 class / id / style
+      // $('[class]').removeAttr('class')
+      // $('[id]').removeAttr('id')
+      $('[style]').removeAttr('style')
       $('button.copy[title="Copy Code"]').remove()
-      // 删除不需要的标签 
+      // 删除不需要的标签
       // $('script, style, link, meta, nav, footer').remove()
-
 
       if (!data.title) continue
       if (data.publish === false) continue
 
       const url = `${baseUrl}/${page.replace('.md', '.html')}`
-      const date = typeof data.date === 'string' ? data.date + '+0800' : (data.date || new Date())
+      const date = typeof data.date === 'string' ? data.date + '+0800' : data.date || new Date()
       console.log(date)
       console.log(moment(date, 'YYYY-MM-DD HH:mmZ').toDate())
 
@@ -96,7 +95,7 @@ export default defineConfig({
         link: url,
         description: data.description,
         content: $('.vp-doc').html() || '',
-        date: moment(date, 'YYYY-MM-DD HH:mmZ').toDate()
+        date: moment(date, 'YYYY-MM-DD HH:mmZ').toDate(),
       })
     }
 
@@ -106,47 +105,45 @@ export default defineConfig({
       console.log('RSS 中的 pubDate:', match[1])
     })
     await fs.writeFile(path.join(outDir, 'rss.xml'), rss, 'utf-8')
-
   },
   async transformPageData(pageData) {
-    var baseUrl = 'https://mqnu00.github.io/blog'
+    return
+    const baseUrl = 'https://mqnu00.github.io/blog'
     const githubPath = '/blog/' + pageData.filePath
-    const history = await getGithubHistory(
-      { 
-        owner: 'mqnu00', 
-        repo: 'blog', 
-        filePath: githubPath, 
-        token: process.env.GITHUB_TOKEN 
-      }
-    ).then((res) => {
+    const history = await getGithubHistory({
+      owner: 'mqnu00',
+      repo: 'blog',
+      filePath: githubPath,
+      token: process.env.GITHUB_TOKEN,
+    }).then((res) => {
       res.forEach((item) => {
-        item.date = moment
-                .utc(item.date)
-                .utcOffset(8)
-                .format("YYYY-MM-DD HH:mm:ss Z")
-              ?? null
+        item.date = moment.utc(item.date).utcOffset(8).format('YYYY-MM-DD HH:mm:ss Z') ?? null
       })
       return res
     })
 
-    pageData.git = { 
+    pageData.git = {
       updated: history[0].date,
-      history
+      history,
     }
 
     pageData.url = `${baseUrl}/${pageData.filePath.replace('.md', '.html')}`
     //   配置讨论
-    if(pageData.frontmatter.discussion == null && pageData.title != null && pageData.title !== '') {
+    if (
+      pageData.frontmatter.discussion == null &&
+      pageData.title != null &&
+      pageData.title !== ''
+    ) {
       console.log(`创建讨论： ${pageData.title}`)
       const discuss = await discussClient.createDiscussion(
-          pageData.title,
-          pageData.url,
-          process.env.VITE_GITHUB_DISCUSS_TYPE_ID
+        pageData.title,
+        pageData.url,
+        process.env.VITE_GITHUB_DISCUSS_TYPE_ID,
       )
       if (discuss) {
         pageData.frontmatter.discussion = discuss
       } else {
-        throw new Error("创建讨论失败")
+        throw new Error('创建讨论失败')
       }
     }
 
@@ -161,7 +158,8 @@ export default defineConfig({
     // 写入 frontmatter
     // parsed.data.git = pageData.git
     parsed.data.url = pageData.url
-    if (pageData.frontmatter.discussion != null) parsed.data.discussion = pageData.frontmatter.discussion
+    if (pageData.frontmatter.discussion != null)
+      parsed.data.discussion = pageData.frontmatter.discussion
 
     // 重新生成 md 内容
     const newContent = matter.stringify(parsed.content, parsed.data)
@@ -172,20 +170,20 @@ export default defineConfig({
   vue: {
     template: {
       transformAssetUrls: {
-        'n-image': ['src']
-      }
-    }
+        'n-image': ['src'],
+      },
+    },
   },
   vite: {
     resolve: {
       alias: {
-        '@blog': resolve(__dirname, '..')
-      }
+        '@blog': resolve(__dirname, '..'),
+      },
     },
     server: {
       host: '0.0.0.0',
       port: 5174,
-      allowedHosts: ['mqnu00.github.io']
+      allowedHosts: ['mqnu00.github.io'],
     },
     plugins: [
       // 自动导入 Vue API（ref、computed 等）
@@ -193,6 +191,11 @@ export default defineConfig({
         imports: ['vue'],
         resolvers: [NaiveUiResolver()],
         dts: '.vitepress/auto-imports.d.ts',
+        eslintrc: {
+          enabled: true, // Default `false`
+          filepath: './eslintrc-auto-import.json', // Default `./.eslintrc-auto-import.json`
+          globalsPropValue: true, // Default `true`, (true | false | 'readonly' | 'writable' | 'off')
+        },
       }),
       // 自动导入 Naive UI 组件
       Components({
@@ -201,7 +204,7 @@ export default defineConfig({
       }),
     ],
     optimizeDeps: {
-      include: ['naive-ui', 'vueuc'],                  // 防止预构建再拿 lib/
+      include: ['naive-ui', 'vueuc'], // 防止预构建再拿 lib/
     },
     ssr: {
       // SSR 阶段也强制 ESM，不再 external 它们
@@ -211,7 +214,13 @@ export default defineConfig({
   head: [
     ['link', { rel: 'icon', href: '/blog/favicon.ico' }],
     ['meta', { name: 'author', content: '广习习' }],
-    ['meta', { name: 'keywords', content: '技术博客, Vue, VitePress, 前端开发, JavaScript' }],
+    [
+      'meta',
+      {
+        name: 'keywords',
+        content: '技术博客, Vue, VitePress, 前端开发, JavaScript',
+      },
+    ],
     ['meta', { property: 'og:type', content: 'website' }],
     ['meta', { property: 'og:site_name', content: '广习习的博客' }],
     ['meta', { name: 'twitter:card', content: 'summary_large_image' }],
@@ -226,69 +235,88 @@ export default defineConfig({
           if (env.frontmatter?.tags) {
             const tags = env.frontmatter.tags as Array<string>
             const title = env.frontmatter?.title as string | undefined
-            
+
             // 插入到内容最前面，确保被索引
-            return  md.render(`# ${title ? title + ' > ' : ''} tags: ${tags.join(' ')}`) + html
+            return md.render(`# ${title ? title + ' > ' : ''} tags: ${tags.join(' ')}`) + html
           }
           return html
-        }
-      }
+        },
+      },
     },
     outline: {
       level: [1, 6], // 显示 h2 和 h3 标题
-      label: '目录'   // 目录标题文字
+      label: '目录', // 目录标题文字
     },
     nav: [
       { text: '首页', link: '/' },
       { text: '博客', link: '/posts/' },
-      { text: '关于', link: '/about/about' }
+      { text: '关于', link: '/about/about' },
     ],
 
     sidebar: {
       '/posts/': [
-          {
-            text: '前端',
-            collapsed: false,
-            items: [
-              { text: '在win11开发兼容ie的网页', link: '/posts/frontend/develop-ie-win11/develop-ie-win11' },
-              { text: '最近开发时遇到的问题(var和async)', link: '/posts/frontend/problem-for-var-and-async/problem-for-var-and-async' },
-            ]
-          },
-          {
-            text: '总结',
-            collapsed: true,
-            items: [
-              { text: '2025总结.md', link: '/posts/summary/2025总结.md' },
-            ]
-          },
-          {
-            text: 'vitepress示例',
-            collapsed: true,
-            items: [
-              {text: '给文章添加tag并支持搜索索引', link: '/posts/vitepress/article-tag'},
-              {text: '基于github的discussion为博客添加评论', link: '/posts/vitepress/blog-comment-by-github-discussion'},
-              { text: '我的第一篇博客', link: '/posts/vitepress/my-first-post' },
-              { text: 'VitePress使用技巧', link: '/posts/vitepress/vitepress-tips' },
-              { text: 'VitePress中的Markdown扩展功能', link: '/posts/vitepress/markdown-extensions' },
-              { text: 'VitePress运行时API详解', link: '/posts/vitepress/runtime-api-examples' }
-            ]
-          },
-      ]
+        {
+          text: '前端',
+          collapsed: false,
+          items: [
+            {
+              text: '在win11开发兼容ie的网页',
+              link: '/posts/frontend/develop-ie-win11/develop-ie-win11',
+            },
+            {
+              text: '最近开发时遇到的问题(var和async)',
+              link: '/posts/frontend/problem-for-var-and-async/problem-for-var-and-async',
+            },
+          ],
+        },
+        {
+          text: '总结',
+          collapsed: true,
+          items: [{ text: '2025总结.md', link: '/posts/summary/2025总结.md' }],
+        },
+        {
+          text: 'vitepress示例',
+          collapsed: true,
+          items: [
+            {
+              text: '给文章添加tag并支持搜索索引',
+              link: '/posts/vitepress/article-tag',
+            },
+            {
+              text: '基于github的discussion为博客添加评论',
+              link: '/posts/vitepress/blog-comment-by-github-discussion',
+            },
+            { text: '我的第一篇博客', link: '/posts/vitepress/my-first-post' },
+            {
+              text: 'VitePress使用技巧',
+              link: '/posts/vitepress/vitepress-tips',
+            },
+            {
+              text: 'VitePress中的Markdown扩展功能',
+              link: '/posts/vitepress/markdown-extensions',
+            },
+            {
+              text: 'VitePress运行时API详解',
+              link: '/posts/vitepress/runtime-api-examples',
+            },
+          ],
+        },
+      ],
     },
 
     socialLinks: [
       { icon: 'github', link: 'https://github.com/mqnu00' },
-      { icon: 'rss', link: '/blog/rss.xml' }
+      { icon: 'rss', link: '/blog/rss.xml' },
     ],
 
     footer: {
       message: 'Released under the MIT License.',
-      copyright: 'Copyright © 2025-present 广习习'
+      copyright: 'Copyright © 2025-present 广习习',
     },
 
     docFooter: {
       prev: false,
-      next: false
-    }
-  }
+      next: false,
+    },
+  },
 })
