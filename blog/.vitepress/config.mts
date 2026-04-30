@@ -107,7 +107,6 @@ export default defineConfig({
     await fs.writeFile(path.join(outDir, 'rss.xml'), rss, 'utf-8')
   },
   async transformPageData(pageData) {
-    return
     const baseUrl = 'https://mqnu00.github.io/blog'
     const githubPath = '/blog/' + pageData.filePath
     const history = await getGithubHistory({
