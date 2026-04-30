@@ -10,5 +10,5 @@ export default {
   Layout,
   enhanceApp({ app, router, siteData }) {
     app.component('NImage', NImage)
-  }
+  },
 } satisfies Theme

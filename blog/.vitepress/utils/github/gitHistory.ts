@@ -19,12 +19,12 @@ export async function getGithubHistory({
   owner,
   repo,
   filePath,
-  token
+  token,
 }: GithubHistoryOptions): Promise<GithubCommitItem[]> {
   const url = `https://api.github.com/repos/${owner}/${repo}/commits?path=${encodeURIComponent(filePath)}`
 
   const headers: Record<string, string> = {
-    'Accept': 'application/vnd.github+json'
+    Accept: 'application/vnd.github+json',
   }
 
   if (token) {
@@ -38,13 +38,23 @@ export async function getGithubHistory({
     return []
   }
 
-  const commits = await res.json()
+  const commits = (await res.json()) as unknown as Array<{
+    sha: string
+    commit: {
+      author: {
+        name: string
+        date: string
+      }
+      message: string
+    }
+    html_url: string
+  }>
 
-  return commits.map((c: any) => ({
+  return commits.map((c) => ({
     sha: c.sha,
     author: c.commit.author.name,
     date: c.commit.author.date,
     message: c.commit.message,
-    url: c.html_url
+    url: c.html_url,
   }))
 }
