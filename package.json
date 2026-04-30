@@ -6,7 +6,7 @@
     "codegen:github": "pnpm graphql-codegen --config ./blog/.vitepress/utils/github/graphql/graphql.config.yml",
     "eslint": "npx eslint --fix ./blog",
     "stylelint": "npx stylelint --fix ./blog",
-    "prettier": "npx prettier --wwrite ./blog"
+    "prettier": "npx prettier --write ./blog"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
