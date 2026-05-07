@@ -20,6 +20,7 @@ declare module 'vue' {
     NResult: typeof import('naive-ui')['NResult']
     NSkeleton: typeof import('naive-ui')['NSkeleton']
     NSpin: typeof import('naive-ui')['NSpin']
+    NTabs: typeof import('naive-ui')['NTabs']
     NTime: typeof import('naive-ui')['NTime']
   }
 }
