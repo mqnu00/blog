@@ -36,4 +36,9 @@ import Friend from './Friend.vue'
         name="2Libra"
         owner="Jimmy"
         introduction=""
-/>
+        :hideInfo="true"
+>
+<template #hideInfo>
+<a href="https://2libra.com/auth/signup/iXb0sw" class="jump-to-friend">邀请码地址</a>
+</template>
+</Friend>

@@ -10,14 +10,20 @@
             align-items: center;
           "
         >
-          <NAvatar
-            :src="avatar"
-            round
-          />
-          <a
-            :href="url"
-            class="jump-to-friend"
-          >{{ name }}</a>
+          <NAvatar :src="avatar" round />
+          <template v-if="hideInfo">
+            <NPopover placement="right">
+              <template #trigger>
+                <a :href="url" class="jump-to-friend">{{ name }}</a>
+              </template>
+              <div>
+                <slot name="hideInfo" />
+              </div>
+            </NPopover>
+          </template>
+          <template v-else>
+            <a :href="url" class="jump-to-friend">{{ name }}</a>
+          </template>
         </div>
       </template>
       <template #default>
@@ -27,14 +33,33 @@
   </div>
 </template>
 <script setup lang="ts">
-import { NAvatar } from "naive-ui";
+import { NAvatar, NPopover } from "naive-ui";
 
 const props = defineProps({
-  url: String,
-  avatar: String,
-  name: String,
-  owner: String,
-  introduction: String,
+  url: {
+    type: String,
+    default: "",
+  },
+  avatar: {
+    type: String,
+    default: "",
+  },
+  name: {
+    type: String,
+    default: "",
+  },
+  owner: {
+    type: String,
+    default: "",
+  },
+  introduction: {
+    type: String,
+    default: "",
+  },
+  hideInfo: {
+    type: Boolean,
+    default: false,
+  },
 });
 </script>
 <style>
