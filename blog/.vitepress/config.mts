@@ -59,7 +59,7 @@ export default defineConfig({
       link: baseUrl,
       language: siteConfig.site.lang,
       copyright: '© 2025 广习习',
-      favicon: 'https://mqnu00.github.io/blog/favicon.ico',
+      image: 'https://mqnu00.github.io/blog/favicon.ico',
     })
 
     const pageRoot = path.resolve(__dirname, '..')
@@ -108,6 +108,7 @@ export default defineConfig({
     await fs.writeFile(path.join(outDir, 'rss.xml'), rss, 'utf-8')
   },
   async transformPageData(pageData) {
+    return
     const baseUrl = 'https://mqnu00.github.io/blog'
     const githubPath = '/blog/' + pageData.filePath
     const history = await getGithubHistory({
