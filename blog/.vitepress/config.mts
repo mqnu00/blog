@@ -13,7 +13,8 @@ import dotenv from 'dotenv'
 import { GithubDiscussApi } from './utils/github/discussion'
 import moment from 'moment'
 
-const mode = process.env.NODE_ENV || 'development'
+const mode = process.env.NODE_ENV_TEST === 'true' ? 'test' : process.env.NODE_ENV || 'development'
+console.log(mode)
 dotenv.config({
   path: path.resolve(process.cwd(), `./blog/.env.${mode}`),
 })
@@ -108,7 +109,7 @@ export default defineConfig({
     await fs.writeFile(path.join(outDir, 'rss.xml'), rss, 'utf-8')
   },
   async transformPageData(pageData) {
-    return
+    if (mode === 'test') return
     const baseUrl = 'https://mqnu00.github.io/blog'
     const githubPath = '/blog/' + pageData.filePath
     const history = await getGithubHistory({
