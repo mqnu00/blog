@@ -59,6 +59,7 @@ export default defineConfig({
       link: baseUrl,
       language: siteConfig.site.lang,
       copyright: '© 2025 广习习',
+      favicon: 'https://mqnu00.github.io/blog/favicon.ico',
     })
 
     const pageRoot = path.resolve(__dirname, '..')
