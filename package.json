@@ -1,5 +1,6 @@
 {
   "scripts": {
+    "docs:tdev": "NODE_ENV_TEST=true vitepress dev blog",
     "docs:dev": "vitepress dev blog",
     "docs:tbuild": "NODE_ENV_TEST=true vitepress build blog",
     "docs:build": "vitepress build blog",
