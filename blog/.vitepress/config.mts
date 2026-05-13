@@ -125,7 +125,7 @@ export default defineConfig({
     })
 
     pageData.git = {
-      updated: history[0].date,
+      updated: history.length > 0 ? history[0].date : '',
       history,
     }
 
@@ -136,16 +136,20 @@ export default defineConfig({
       pageData.title != null &&
       pageData.title !== ''
     ) {
-      console.log(`创建讨论： ${pageData.title}`)
-      const discuss = await discussClient.createDiscussion(
-        pageData.title,
-        pageData.url,
-        process.env.VITE_GITHUB_DISCUSS_TYPE_ID,
-      )
-      if (discuss) {
-        pageData.frontmatter.discussion = discuss
-      } else {
-        throw new Error('创建讨论失败')
+      try {
+        console.log(`创建讨论： ${pageData.title}`)
+        const discuss = await discussClient.createDiscussion(
+          pageData.title,
+          pageData.url,
+          process.env.VITE_GITHUB_DISCUSS_TYPE_ID,
+        )
+        if (discuss) {
+          pageData.frontmatter.discussion = discuss
+        } else {
+          throw new Error('创建讨论失败')
+        }
+      } catch (error) {
+        console.error('创建讨论失败:', error)
       }
     }
 
@@ -280,6 +284,10 @@ export default defineConfig({
           text: 'vitepress示例',
           collapsed: true,
           items: [
+            {
+              text: '统一白天和黑夜主题',
+              link: '/posts/vitepress/unified-theme-for-day-and-night',
+            },
             {
               text: '给文章添加tag并支持搜索索引',
               link: '/posts/vitepress/article-tag',
