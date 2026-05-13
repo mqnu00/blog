@@ -10,19 +10,30 @@
             align-items: center;
           "
         >
-          <NAvatar :src="avatar" round />
+          <NAvatar
+            :src="avatar"
+            round
+          />
           <template v-if="hideInfo">
-            <NPopover placement="right">
-              <template #trigger>
-                <a :href="url" class="jump-to-friend">{{ name }}</a>
-              </template>
-              <div>
-                <slot name="hideInfo" />
-              </div>
-            </NPopover>
+            <ClientOnly>
+              <NPopover placement="right">
+                <template #trigger>
+                  <a
+                    :href="url"
+                    class="jump-to-friend"
+                  >{{ name }}</a>
+                </template>
+                <div>
+                  <slot name="hideInfo" />
+                </div>
+              </NPopover>
+            </ClientOnly>
           </template>
           <template v-else>
-            <a :href="url" class="jump-to-friend">{{ name }}</a>
+            <a
+              :href="url"
+              class="jump-to-friend"
+            >{{ name }}</a>
           </template>
         </div>
       </template>
