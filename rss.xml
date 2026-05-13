@@ -4,7 +4,7 @@
         <title>广习习的博客</title>
         <link>https://mqnu00.github.io/blog/</link>
         <description>分享技术与生活的个人博客</description>
-        <lastBuildDate>Tue, 12 May 2026 08:35:44 GMT</lastBuildDate>
+        <lastBuildDate>Wed, 13 May 2026 08:36:10 GMT</lastBuildDate>
         <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
         <generator>https://github.com/jpmonette/feed</generator>
         <language>en-US</language>
@@ -307,6 +307,10 @@
         "collapsed": true,
         "items": [
           {
+            "text": "统一白天和黑夜主题",
+            "link": "/posts/vitepress/unified-theme-for-day-and-night"
+          },
+          {
             "text": "给文章添加tag并支持搜索索引",
             "link": "/posts/vitepress/article-tag"
           },
@@ -437,6 +441,36 @@
     "createdAt": "2026-04-03T05:22:56Z"
   }
 }</pre><h2 id="应用场景" tabindex="-1">应用场景 <a class="header-anchor" href="#应用场景" aria-label="Permalink to &quot;应用场景&quot;">​</a></h2><p><code>useData()</code> API可以用于：</p><ul><li>根据站点配置动态渲染内容</li><li>访问页面级的元数据</li><li>在自定义组件中访问VitePress的内部数据</li></ul><p>更多运行时API的详细信息，请查看 <a href="https://vitepress.dev/reference/runtime-api#usedata" target="_blank" rel="noreferrer">官方文档</a>。</p></div>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[统一白天和黑夜主题]]></title>
+            <link>https://mqnu00.github.io/blog//posts/vitepress/unified-theme-for-day-and-night.html</link>
+            <guid isPermaLink="false">https://mqnu00.github.io/blog//posts/vitepress/unified-theme-for-day-and-night.html</guid>
+            <pubDate>Wed, 13 May 2026 07:49:00 GMT</pubDate>
+            <content:encoded><![CDATA[<div><h1 id="存在问题" tabindex="-1">存在问题 <a class="header-anchor" href="#存在问题" aria-label="Permalink to &quot;存在问题&quot;">​</a></h1><p>vitepress 切换白天和黑夜主题，在 vue 文件想要感知到，可以通过以下代码</p><div class="language-ts vp-adaptive-theme"><span class="lang">ts</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>import</span><span> { useData } </span><span>from</span><span> "vitepress"</span><span>;</span></span>
+<span class="line"></span>
+<span class="line"><span>const</span><span> { </span><span>isDark</span><span> } </span><span>=</span><span> useData</span><span>();</span></span></code></pre></div><p>naive-ui 设置主题时，也要监视 <code>isDark</code> 实现主题切换。</p><p>但是存在问题：必须确认已经在浏览器环境了，才能获取到 <code>isDark</code> 环境变量</p><h1 id="切换-naive-ui-主题" tabindex="-1">切换 naive-ui 主题 <a class="header-anchor" href="#切换-naive-ui-主题" aria-label="Permalink to &quot;切换 naive-ui 主题&quot;">​</a></h1><p>naive-ui 本身自带 白天主题和黑夜主题</p><div class="language-ts vp-adaptive-theme"><span class="lang">ts</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>import</span><span> {darkTheme} </span><span>from</span><span> "naive-ui"</span><span>;</span></span>
+<span class="line"><span>const</span><span> theme</span><span> =</span><span> computed</span><span>(() </span><span>=&gt;</span><span> {</span></span>
+<span class="line"><span>  if</span><span> (isClient.value) {</span></span>
+<span class="line"><span>    return</span><span> isDark.value </span><span>?</span><span> darkTheme </span><span>:</span><span> undefined</span><span>;</span></span>
+<span class="line"><span>  }</span></span>
+<span class="line"><span>  return</span><span> null</span><span>;</span></span>
+<span class="line"><span>});</span></span></code></pre></div><h1 id="对于自定义的颜色想要切换" tabindex="-1">对于自定义的颜色想要切换 <a class="header-anchor" href="#对于自定义的颜色想要切换" aria-label="Permalink to &quot;对于自定义的颜色想要切换&quot;">​</a></h1><div class="language-ts vp-adaptive-theme"><span class="lang">ts</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>const</span><span> cssVars</span><span> =</span><span> computed</span><span>(() </span><span>=&gt;</span><span> {</span></span>
+<span class="line"><span>  if</span><span> (isClient.value) {</span></span>
+<span class="line"><span>    return</span><span> {</span></span>
+<span class="line"><span>      "--hint-bg-color"</span><span>: isDark.value</span></span>
+<span class="line"><span>        ?</span><span> "rgb(91, 91, 91)"</span></span>
+<span class="line"><span>        :</span><span> "rgb(233, 233, 238)"</span><span>,</span></span>
+<span class="line"><span>      "--discuss-bg-color"</span><span>: isDark.value</span></span>
+<span class="line"><span>        ?</span><span> "rgb(0, 0, 0)"</span></span>
+<span class="line"><span>        :</span><span> "rgb(255, 255, 255)"</span><span>,</span></span>
+<span class="line"><span>      "--hint-content-bg-hover"</span><span>: isDark.value</span></span>
+<span class="line"><span>        ?</span><span> "rgb(95, 95, 95)"</span></span>
+<span class="line"><span>        :</span><span> "rgb(233, 233, 238)"</span><span>,</span></span>
+<span class="line"><span>    };</span></span>
+<span class="line"><span>  }</span></span>
+<span class="line"><span>  return</span><span> null</span><span>;</span></span>
+<span class="line"><span>});</span></span></code></pre></div></div>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[VitePress使用技巧]]></title>
