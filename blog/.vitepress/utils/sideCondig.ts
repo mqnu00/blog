@@ -1,7 +1,6 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import matter from 'gray-matter'
-import { keysOf } from 'naive-ui/es/_utils'
 const POSTS_DIR = path.resolve(__dirname, '../../', 'posts')
 
 declare type SidebarItem = {
@@ -64,11 +63,18 @@ function buildSidebarItems(dirPath: string) {
         if (!title) continue
         Object.entries(CATEGORY_LABELS).some(([key, label]) => {
           if (entry.parentPath.includes(key)) {
-            res.push({
-              text: title,
-              category: CATEGORY_LABELS[key] || '其他',
-              link: `${entry.parentPath}/${entry.name.replace('.md', '.html')}`,
-            })
+            // 找到 'blog' 在路径中的位置
+            const parts = entry.parentPath.split(path.sep)
+            const blogIndex = parts.findIndex((part) => part === 'posts')
+            if (blogIndex !== -1) {
+              const relativePath = path.join(...parts.slice(blogIndex))
+              // console.log('/' + relativePath) // 确保以 / 开头
+              res.push({
+                text: title,
+                category: CATEGORY_LABELS[key] || '其他',
+                link: `${'/' + relativePath}/${entry.name.replace('.md', '.html')}`,
+              })
+            }
           }
         })
       }
