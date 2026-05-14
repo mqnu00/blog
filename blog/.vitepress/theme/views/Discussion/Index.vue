@@ -71,6 +71,10 @@
             </template>
             <NTime :time="discussion?.createDate" />
           </NPopover>
+          <span
+            class="quote-link"
+            @click="quoteComment(index)"
+          >回复</span>
         </div>
       </template>
       <template #default>
@@ -115,6 +119,10 @@
                       />
                     </template>
                     <span>{{ `${reply?.author?.login}:` }}</span>
+                    <span
+                      class="quote-link"
+                      @click="quoteReply(index, reIndex)"
+                    >回复</span>
                     <div
                       style="
                         padding-left: 20px;
@@ -444,6 +452,31 @@ const expandReply: CollapseProps["onItemHeaderClick"] = (data) => {
   }
 };
 
+function formatQuote(body: string | null | undefined, author?: string | null) {
+  const raw = body ?? "";
+  const header = author ? `@${author}\n` : "";
+  const lines = raw
+    .replace(/\r\n/g, "\n")
+    .split("\n")
+    .map((line) => `> ${line}`);
+  return [header, ...lines, "", ""].filter(Boolean).join("\n");
+}
+
+function quoteComment(commentIndex: number) {
+  const comment = discussionList.value?.comments.nodes?.[commentIndex];
+  if (!comment) return;
+  const quote = formatQuote(comment.body, comment.author?.login);
+  comment.replyContent = quote;
+}
+
+function quoteReply(commentIndex: number, replyIndex: number) {
+  const comment = discussionList.value?.comments.nodes?.[commentIndex];
+  const reply = comment?.replies?.nodes?.[replyIndex];
+  if (!comment || !reply) return;
+  const quote = formatQuote(reply.body, reply.author?.login);
+  comment.replyContent = quote;
+}
+
 // 发送评论
 const commentContent = ref();
 const sendCommentLoading = ref(false);
@@ -547,6 +580,17 @@ function randomColor() {
   cursor: pointer;
   text-decoration: underline;
   color: rgb(0, 157, 255);
+}
+
+.quote-link {
+  cursor: pointer;
+  margin-left: 10px;
+  color: rgb(0, 157, 255);
+  font-size: 12px;
+}
+
+.quote-link:hover {
+  text-decoration: underline;
 }
 
 .reply-timeline .n-timeline-item-content__meta {
