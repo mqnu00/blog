@@ -9,6 +9,7 @@ import path, { resolve } from 'node:path'
 import matter from 'gray-matter'
 import { load } from 'cheerio'
 import { getGithubHistory } from './utils/github/gitHistory'
+import { generateSidebar } from './utils/sideCondig'
 import dotenv from 'dotenv'
 import { GithubDiscussApi } from './utils/github/discussion'
 import moment from 'moment'
@@ -259,60 +260,7 @@ export default defineConfig({
       { text: '关于', link: '/about/about' },
     ],
 
-    sidebar: {
-      '/posts/': [
-        {
-          text: '前端',
-          collapsed: false,
-          items: [
-            {
-              text: '在win11开发兼容ie的网页',
-              link: '/posts/frontend/develop-ie-win11/develop-ie-win11',
-            },
-            {
-              text: '最近开发时遇到的问题(var和async)',
-              link: '/posts/frontend/problem-for-var-and-async/problem-for-var-and-async',
-            },
-          ],
-        },
-        {
-          text: '总结',
-          collapsed: true,
-          items: [{ text: '2025总结.md', link: '/posts/summary/2025总结.md' }],
-        },
-        {
-          text: 'vitepress示例',
-          collapsed: true,
-          items: [
-            {
-              text: '统一白天和黑夜主题',
-              link: '/posts/vitepress/unified-theme-for-day-and-night',
-            },
-            {
-              text: '给文章添加tag并支持搜索索引',
-              link: '/posts/vitepress/article-tag',
-            },
-            {
-              text: '基于github的discussion为博客添加评论',
-              link: '/posts/vitepress/blog-comment-by-github-discussion',
-            },
-            { text: '我的第一篇博客', link: '/posts/vitepress/my-first-post' },
-            {
-              text: 'VitePress使用技巧',
-              link: '/posts/vitepress/vitepress-tips',
-            },
-            {
-              text: 'VitePress中的Markdown扩展功能',
-              link: '/posts/vitepress/markdown-extensions',
-            },
-            {
-              text: 'VitePress运行时API详解',
-              link: '/posts/vitepress/runtime-api-examples',
-            },
-          ],
-        },
-      ],
-    },
+    sidebar: generateSidebar(),
 
     socialLinks: [
       { icon: 'github', link: 'https://github.com/mqnu00' },
