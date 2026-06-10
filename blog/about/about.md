@@ -22,11 +22,17 @@ import Friend from './Friend.vue'
 
 ## 博客
 
-<Friend url="https://wcowin.work/" 
+<Friend url="https://a.minifog.org.cn/" 
         avatar="https://pic2.zhimg.com/100/v2-864dbf5fe2906aae3f5f18b491320a0d_r.jpg" 
         name="Wcowin's Blog"
         owner="Wcowin"
-        introduction=""
+/>
+
+<Friend url="https://wcowin.work/" 
+        avatar="https://github.com/JinRudy.png" 
+        name="雾水"
+        owner="Wcowin"
+        introduction="记录技术、AI 与生活 —— 丝滑科技感 + 文艺水墨"
 />
 
 ## 论坛
@@ -35,7 +41,6 @@ import Friend from './Friend.vue'
         avatar="https://2libra.com/favicon.ico" 
         name="2Libra"
         owner="Jimmy"
-        introduction=""
         :hideInfo="true"
 >
 <template #hideInfo>
