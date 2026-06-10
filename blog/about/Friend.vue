@@ -34,7 +34,6 @@
           </template>
           <template v-else>
             <a
-              :href="url"
               class="jump-to-friend"
             >{{ name }}</a>
           </template>
