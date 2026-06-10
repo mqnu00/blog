@@ -4,6 +4,7 @@ import matter from 'gray-matter'
 const POSTS_DIR = path.resolve(__dirname, '../../', 'posts')
 
 declare type SidebarItem = {
+  date?: number
   text: string
   link?: string
   collapsed?: boolean
@@ -22,6 +23,7 @@ function parseMD(filePath: string): { title: string; date: number | null } {
     title: '',
     date: null as number | null,
   }
+  // console.log(data.title, data.date)
   if (typeof data.title === 'string' && data.title.trim()) {
     res['title'] = data.title.trim()
   }
@@ -29,6 +31,8 @@ function parseMD(filePath: string): { title: string; date: number | null } {
     const timestamp = Date.parse(data.date.trim().replace(' ', 'T'))
     res['date'] = Number.isFinite(timestamp) ? timestamp : null
   }
+
+  // console.log(res)
 
   return res
 }
@@ -48,6 +52,7 @@ function buildSidebarItems(dirPath: string) {
       return a.name.localeCompare(b.name, 'zh-CN')
     })
   const res: Array<{
+    date: number
     text: string
     link?: string
     category?: string
@@ -70,6 +75,7 @@ function buildSidebarItems(dirPath: string) {
               const relativePath = path.join(...parts.slice(blogIndex))
               // console.log('/' + relativePath) // 确保以 / 开头
               res.push({
+                date: date || 0,
                 text: title,
                 category: CATEGORY_LABELS[key] || '其他',
                 link: `${'/' + relativePath}/${entry.name.replace('.md', '.html')}`,
@@ -85,21 +91,32 @@ function buildSidebarItems(dirPath: string) {
 
 export function generateSidebar(): Record<string, SidebarItem[]> {
   const res = buildSidebarItems(POSTS_DIR)
-  console.log(res)
+  console.log('res', res)
   const sidebarList: SidebarItem[] = []
-  for (const { text, link, category } of res) {
+  for (const { text, link, category, date } of res) {
     const existingCategory = sidebarList.find((item) => item.text === category)
     if (existingCategory) {
       existingCategory.items = existingCategory.items || []
-      existingCategory.items.push({ text, link })
+      existingCategory.items.push({ text, link, date })
     } else {
       sidebarList.push({
         text: category || '其他',
         collapsed: true,
-        items: [{ text, link }],
+        items: [{ text, link, date }],
       })
     }
   }
+  sidebarList.forEach((category) => {
+    category.items?.sort((a, b) => {
+      return (a.date || 0) > (b.date || 0) ? -1 : 1
+    })
+  })
+  sidebarList.forEach((category) => {
+    console.log(category.text)
+    category.items?.forEach((artical) => {
+      console.log(artical.text, artical.date)
+    })
+  })
   console.log(sidebarList)
   return {
     '/posts/': sidebarList,
