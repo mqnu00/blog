@@ -1,6 +1,9 @@
 <template>
   <div style="display: flex; flex-direction: column; margin: 20px">
-    <NCard style="border: 1px solid">
+    <NCard
+      style="border: 1px solid; cursor: pointer;"
+      @click="jumpToFriend"
+    >
       <template #header>
         <div
           style="
@@ -35,6 +38,12 @@
               class="jump-to-friend"
             >{{ name }}</a>
           </template>
+          <div
+            v-if="introduction != null && introduction != ''"
+            style="margin-left: 20px; font-size: 14px;"
+          >
+            {{ introduction }}
+          </div>
         </div>
       </template>
       <template #default>
@@ -72,6 +81,10 @@ const props = defineProps({
     default: false,
   },
 });
+
+const jumpToFriend = () => {
+  window.open(props.url)
+}
 </script>
 <style>
 .jump-to-friend {
