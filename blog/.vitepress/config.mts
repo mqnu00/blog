@@ -20,11 +20,11 @@ dotenv.config({
   path: path.resolve(process.cwd(), `./blog/.env.${mode}`),
 })
 const discussClient = new GithubDiscussApi(
-  process.env.GITHUB_TOKEN,
+  process.env.GITHUB_TOKEN || '',
   process.env.VITE_GITHUB_DISCUSS_OWNER,
   process.env.VITE_GITHUB_DISCUSS_REP,
   process.env.VITE_GITHUB_REPO_ID,
-  process.env.Local === '1' ? process.env.VITE_GITHUB_PROXY : null,
+  process.env.Local === '1' ? process.env.VITE_GITHUB_PROXY : undefined,
 )
 
 // https://vitepress.dev/reference/site-config
