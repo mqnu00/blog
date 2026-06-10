@@ -309,15 +309,14 @@ const { isDark } = useData();
 const md: Ref<MarkdownIt | null | undefined> = ref()
 provide("md", md);
 
-type DiscussionType = NonNullable<
-  NonNullable<GetDiscussionByNumberQuery["repository"]>["discussion"]
->;
-
 // type 使用 & 交叉类型扩展
+type DiscussionType = NonNullable<NonNullable<GetDiscussionByNumberQuery["repository"]>["discussion"]>
+type CommentNode = NonNullable<DiscussionType["comments"]["nodes"]>[0]
+type ReplyNode = NonNullable<NonNullable<NonNullable<GetDiscussionCommentReplyQuery["node"]>["replies"]>["nodes"]>[0]
 type DiscussionWithUser = Omit<DiscussionType, "comments"> & {
   comments: Omit<DiscussionType["comments"], "nodes"> & {
     nodes: Array<
-      | (NonNullable<DiscussionType["comments"]["nodes"]>[0] & {
+      | (CommentNode & {
           userInfo?: GetUserInfoQuery["user"];
           createDate?: Date;
           startCount?: number;
@@ -330,16 +329,7 @@ type DiscussionWithUser = Omit<DiscussionType, "comments"> & {
             loading: boolean;
             nodes: Array<
               | null
-              | (Omit<
-                  NonNullable<
-                    NonNullable<
-                      NonNullable<
-                        GetDiscussionCommentReplyQuery["node"]
-                      >["replies"]["nodes"]
-                    >[0]
-                  >,
-                  "reply"
-                > & {
+              | (Omit<ReplyNode,"reply"> & {
                   createDate?: number;
                   userInfo?: GetUserInfoQuery["user"];
                 })
