@@ -280,16 +280,12 @@ const isClient = ref(false);
 onMounted(() => {
   isClient.value = true;
 });
-onMounted(async () => {
-  highlighter.value = await createHighlighter({
-    themes: ["github-light", "github-dark"],
-    langs: ["javascript", "typescript", "vue", "html", "css"],
-  });
-});
-const message = useMessage();
-const { isDark } = useData();
-const md = computed(() => {
-  return new MarkdownIt({
+createHighlighter({
+  themes: ["github-light", "github-dark"],
+  langs: ["javascript", "typescript", "vue", "html", "css"],
+}).then((res) => {
+  highlighter.value = res
+  md.value = new MarkdownIt({
     highlight: function (str, lang) {
       if (lang && highlighter.value?.getLoadedLanguages().includes(lang)) {
         const theme = isDark.value ? "github-dark" : "github-light";
@@ -307,7 +303,10 @@ const md = computed(() => {
     breaks: true, // 将换行符转换为 <br>
     xhtmlOut: true, // 使用 XHTML 闭合标签
   });
-});
+})
+const message = useMessage();
+const { isDark } = useData();
+const md: Ref<MarkdownIt | null | undefined> = ref()
 provide("md", md);
 
 type DiscussionType = NonNullable<
