@@ -35,6 +35,12 @@
               class="jump-to-friend"
             >{{ name }}</a>
           </template>
+          <div
+            v-if="introduction != null && introduction != ''"
+            style="margin-left: 20px; font-size: 14px;"
+          >
+            {{ introduction }}
+          </div>
         </div>
       </template>
       <template #default>
