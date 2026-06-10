@@ -22,13 +22,13 @@ import Friend from './Friend.vue'
 
 ## 博客
 
-<Friend url="https://a.minifog.org.cn/" 
+<Friend url="https://wcowin.work/" 
         avatar="https://pic2.zhimg.com/100/v2-864dbf5fe2906aae3f5f18b491320a0d_r.jpg" 
         name="Wcowin's Blog"
         owner="Wcowin"
 />
 
-<Friend url="https://wcowin.work/" 
+<Friend url="https://a.minifog.org.cn/" 
         avatar="https://github.com/JinRudy.png" 
         name="雾水"
         owner="Wcowin"
