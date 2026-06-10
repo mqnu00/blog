@@ -1,6 +1,9 @@
 <template>
   <div style="display: flex; flex-direction: column; margin: 20px">
-    <NCard style="border: 1px solid">
+    <NCard
+      style="border: 1px solid; cursor: pointer;"
+      @click="jumpToFriend"
+    >
       <template #header>
         <div
           style="
@@ -78,6 +81,10 @@ const props = defineProps({
     default: false,
   },
 });
+
+const jumpToFriend = () => {
+  window.open(props.url)
+}
 </script>
 <style>
 .jump-to-friend {
