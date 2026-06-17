@@ -53,5 +53,20 @@
     "borderDisabledPrimary": "1px solid #4D507AFF",
     "borderSuccess": "1px solid #4D507AFF",
     "borderDisabledSuccess": "1px solid #4D507AFF"
+  },
+  "Tabs": {
+    "tabTextColorActiveLine": "#638FE2FF",
+    "tabTextColorHoverLine": "#638FE2FF",
+    "tabTextColorActiveBar": "#638FE2FF",
+    "tabTextColorHoverBar": "#638FE2FF",
+    "tabTextColorActiveCard": "#638FE2FF",
+    "barColor": "#638FE2FF"
+  },
+  "Input": {
+    "caretColor": "#638FE2FF",
+    "loadingColor": "#638FE2FF",
+    "borderFocus": "1px solid #7e93e7",
+    "borderHover": "1px solid #7e93e7",
+    "boxShadowFocus": "0 0 8px 0 rgb(99 140 226 / 30%)"
   }
 }

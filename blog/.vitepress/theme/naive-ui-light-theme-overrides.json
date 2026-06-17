@@ -53,5 +53,20 @@
     "borderDisabledPrimary": "1px solid #0C137AFF",
     "borderSuccess": "1px solid #0C137AFF",
     "borderDisabledSuccess": "1px solid #0C137AFF"
+  },
+  "Tabs": {
+    "tabTextColorActiveLine": "#1848A0FF",
+    "tabTextColorHoverLine": "#1848A0FF",
+    "tabTextColorActiveBar": "#1848A0FF",
+    "tabTextColorHoverBar": "#1848A0FF",
+    "tabTextColorActiveCard": "#1848A0FF",
+    "barColor": "#1848A0FF"
+  },
+  "Input": {
+    "caretColor": "#1865A0FF",
+    "loadingColor": "#1865A0FF",
+    "borderHover": "1px solid #3648ADFF",
+    "borderFocus": "1px solid #3648ADFF",
+    "boxShadowFocus": "0 0 0 2px rgb(24 108 169 / 20%)"
   }
 }
