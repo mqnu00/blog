@@ -48,7 +48,6 @@ const theme = computed(() => {
   return null;
 });
 const themeOverrides = computed(() => {
-  console.log(isDark.value)
   if (isDark.value) {
     return nightThemeOverrides
   } else return lightThemeOverrides
