@@ -65,6 +65,7 @@
   "Input": {
     "caretColor": "#638FE2FF",
     "loadingColor": "#638FE2FF",
+    "colorFocus": "rgba(99, 140, 226, 0.1)",
     "borderFocus": "1px solid #7e93e7",
     "borderHover": "1px solid #7e93e7",
     "boxShadowFocus": "0 0 8px 0 rgb(99 140 226 / 30%)"
