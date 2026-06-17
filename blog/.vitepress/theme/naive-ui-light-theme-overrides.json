@@ -68,5 +68,9 @@
     "borderHover": "1px solid #3648ADFF",
     "borderFocus": "1px solid #3648ADFF",
     "boxShadowFocus": "0 0 0 2px rgb(24 108 169 / 20%)"
+  },
+  "Spin": {
+    "textColor": "#1865A0FF",
+    "color": "#1865A0FF"
   }
 }
