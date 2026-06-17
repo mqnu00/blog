@@ -472,8 +472,7 @@ const sendCommentLoading = ref(false);
 async function sendComment() {
   if (!commentContent.value || commentContent.value === "") {
     message.error("评论内容为空！");
-  }
-  if (discussionList.value?.id) {
+  } else if (discussionList.value?.id) {
     sendCommentLoading.value = true;
     const res = await discussClient.value?.addDiscussionComment(
       discussionList.value.id,
@@ -498,9 +497,7 @@ async function sendReply(commentIndex: number) {
     comments[commentIndex]?.replyContent === ""
   ) {
     message.error("回复内容为空！");
-    return;
-  }
-  if (comments[commentIndex]?.id) {
+  } else if (comments[commentIndex]?.id) {
     sendReplyLoading.value = true;
     const res = await discussClient.value?.addReplyToComment(
       discussionList.value?.id!,
