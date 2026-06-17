@@ -3,10 +3,14 @@
     :locale="zhCN"
     :date-locale="dateZhCN"
     :theme="theme"
+    :theme-overrides="themeOverrides"
     :style="cssVars"
   >
     <NMessageProvider>
-      <Page />
+      <NThemeEditor v-if="isDev">
+        <Page />
+      </NThemeEditor>
+      <Page v-else />
     </NMessageProvider>
   </NConfigProvider>
 </template>
@@ -22,6 +26,7 @@ import {
   NMessageProvider,
   NP,
   NTag,
+  NThemeEditor,
   NTimeline,
   NTimelineItem,
   useMessage,
@@ -29,9 +34,12 @@ import {
 } from "naive-ui";
 import Page from "./Page.vue";
 import { useData } from "vitepress";
+import lightThemeOverrides from './naive-ui-light-theme-overrides.json'
+import nightThemeOverrides from './naive-ui-night-theme-overrides.json'
 
 const { isDark } = useData();
 const isClient = ref(false);
+const isDev = import.meta.env.DEV
 
 const theme = computed(() => {
   if (isClient.value) {
@@ -39,6 +47,12 @@ const theme = computed(() => {
   }
   return null;
 });
+const themeOverrides = computed(() => {
+  console.log(isDark.value)
+  if (isDark.value) {
+    return nightThemeOverrides
+  } else return lightThemeOverrides
+})
 
 // 动态生成 CSS 变量
 const cssVars = computed(() => {
