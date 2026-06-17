@@ -486,8 +486,8 @@ async function sendComment() {
     } else {
       message.error("评论发送失败！");
     }
-    sendCommentLoading.value = false;
   }
+  sendCommentLoading.value = false;
 }
 // 发送回复
 const sendReplyLoading = ref(false);
@@ -514,8 +514,8 @@ async function sendReply(commentIndex: number) {
     } else {
       message.error("回复发送失败！");
     }
-    sendReplyLoading.value = false;
   }
+  sendReplyLoading.value = false;
 }
 
 onMounted(async () => {
