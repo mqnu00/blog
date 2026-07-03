@@ -4,7 +4,7 @@
         <title>广习习的博客</title>
         <link>https://mqnu00.github.io/blog/</link>
         <description>分享技术与生活的个人博客</description>
-        <lastBuildDate>Wed, 17 Jun 2026 12:48:51 GMT</lastBuildDate>
+        <lastBuildDate>Fri, 03 Jul 2026 08:35:21 GMT</lastBuildDate>
         <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
         <generator>https://github.com/jpmonette/feed</generator>
         <language>en-US</language>
@@ -56,6 +56,24 @@
 <span class="line"><span>        // ......</span></span>
 <span class="line"><span>    })</span></span>
 <span class="line"><span>})</span></span></code></pre></div><h1 id="总结" tabindex="-1">总结 <a class="header-anchor" href="#总结" aria-label="Permalink to &quot;总结&quot;">​</a></h1><p>语法不习惯是一方面，保证ie8和现代浏览器网页的显示行为一致又是一个难点。</p><p>最近看了一圈jquery和extjs，没看到查看大图的组件。</p><p>尝试写个demo，就发现事件监听、图像DOM的属性等等的，ie8和现代浏览器不一致的问题。</p></div>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[SSH端口转发]]></title>
+            <link>https://mqnu00.github.io/blog//posts/ops/ssh-port-forwarding/ssh-port-forwarding.html</link>
+            <guid isPermaLink="false">https://mqnu00.github.io/blog//posts/ops/ssh-port-forwarding/ssh-port-forwarding.html</guid>
+            <pubDate>Fri, 03 Jul 2026 02:48:00 GMT</pubDate>
+            <content:encoded><![CDATA[<div><h1 id="背景" tabindex="-1">背景 <a class="header-anchor" href="#背景" aria-label="Permalink to &quot;背景&quot;">​</a></h1><p>目前家里有一台小服务器</p><h2 id="配置" tabindex="-1">配置 <a class="header-anchor" href="#配置" aria-label="Permalink to &quot;配置&quot;">​</a></h2><table tabindex="0"><thead><tr><th>类型</th><th>参数</th></tr></thead><tbody><tr><td>OS</td><td>Ubuntu 22.04.5 LTS x86_64</td></tr><tr><td>Kernel</td><td>6.8.0-124-generic</td></tr><tr><td>Shell</td><td>zsh 5.8.1</td></tr><tr><td>CPU</td><td>Intel Celeron N3150 (4) @ 2.080GHz</td></tr><tr><td>Memory</td><td>2GB * 2 DDR3 1333 MHz</td></tr><tr><td>DISK</td><td>TOSHIBA DT01ACA050 机械硬盘 500G</td></tr><tr><td></td><td>Great Wall GW600 256GB 固态硬盘 2.5寸</td></tr><tr><td></td><td>Kingchuxing 256GB M.2 SATA 固态硬盘 2230 （外接移动硬盘）</td></tr></tbody></table><h2 id="网络环境" tabindex="-1">网络环境 <a class="header-anchor" href="#网络环境" aria-label="Permalink to &quot;网络环境&quot;">​</a></h2><p>使用小区免费的网络。IP分发只有IPV4，没有IPV6。</p><h3 id="tailscale" tabindex="-1">tailscale <a class="header-anchor" href="#tailscale" aria-label="Permalink to &quot;tailscale&quot;">​</a></h3><p>由于需要外网访问，使用了tailscale，但是没有自配derp，延迟很高。</p><div class="language-shell vp-adaptive-theme"><span class="lang">shell</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>&gt;</span><span> tailscale ping 100.71.186.58</span></span>
+<span class="line"><span>pong</span><span> from</span><span> laptop-mqnu00</span><span> (100.71.186.58) via DERP(</span><span>hkg</span><span>) in 329ms</span></span>
+<span class="line"><span>pong</span><span> from</span><span> laptop-mqnu00</span><span> (100.71.186.58) via DERP(</span><span>hkg</span><span>) in 318ms</span></span>
+<span class="line"><span>pong</span><span> from</span><span> laptop-mqnu00</span><span> (100.71.186.58) via DERP(</span><span>hkg</span><span>) in 343ms</span></span>
+<span class="line"><span>pong</span><span> from</span><span> laptop-mqnu00</span><span> (100.71.186.58) via DERP(</span><span>hkg</span><span>) in 291ms</span></span>
+<span class="line"><span>pong</span><span> from</span><span> laptop-mqnu00</span><span> (100.71.186.58) via DERP(</span><span>hkg</span><span>) in 266ms</span></span>
+<span class="line"><span>pong</span><span> from</span><span> laptop-mqnu00</span><span> (100.71.186.58) via DERP(</span><span>hkg</span><span>) in 312ms</span></span>
+<span class="line"><span>pong</span><span> from</span><span> laptop-mqnu00</span><span> (100.71.186.58) via DERP(</span><span>hkg</span><span>) in 328ms</span></span>
+<span class="line"><span>pong</span><span> from</span><span> laptop-mqnu00</span><span> (100.71.186.58) via DERP(</span><span>hkg</span><span>) in 317ms</span></span>
+<span class="line"><span>pong</span><span> from</span><span> laptop-mqnu00</span><span> (100.71.186.58) via DERP(</span><span>hkg</span><span>) in 318ms</span></span>
+<span class="line"><span>pong</span><span> from</span><span> laptop-mqnu00</span><span> (100.71.186.58) via DERP(</span><span>hkg</span><span>) in 311ms</span></span>
+<span class="line"><span>direct</span><span> connection</span><span> not</span><span> established</span></span></code></pre></div><h3 id="frp" tabindex="-1">frp <a class="header-anchor" href="#frp" aria-label="Permalink to &quot;frp&quot;">​</a></h3><p>寻找免费的frp服务，只能提供一两个端口，速率也只有10M左右。</p><p>出现端口不够用的情况。</p><h1 id="ssh端口转发" tabindex="-1">SSH端口转发 <a class="header-anchor" href="#ssh端口转发" aria-label="Permalink to &quot;SSH端口转发&quot;">​</a></h1><p>实现效果是FRP穿透内网服务器22端口的同时，通过SSH转发服务器的其他端口，使得外网能够访问服务器的其他端口，又不用真正打通。</p><div class="language-shell vp-adaptive-theme"><span class="lang">shell</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>ssh</span><span> -L</span><span> 本地端口:目标地址:目标端口</span><span> -p</span><span> [FRP映射的SSH端口] [用户名]@[服务器公网IP]</span></span></code></pre></div><p>比如我输入命令：</p><div class="language- vp-adaptive-theme"><span class="lang"></span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>ssh -L 5140:192.168.10.5:5140 -p xxxxx name@xxx.xxx.xxx.xxx</span></span></code></pre></div><p>我电脑本地访问 127.0.0.1:5140，会被ssh进程监听捕获，转发消息到内网服务器，然后消息原封不动的发送给内网的192.168.10.5:5140。</p><p>不过整个过程是通过FRP的连接，某种程度上实现了端口复用。</p></div>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[2025总结]]></title>
@@ -291,6 +309,17 @@
             "text": "在win11开发兼容ie的网页",
             "link": "/posts/frontend/develop-ie-win11/develop-ie-win11.html",
             "date": 1764242940000
+          }
+        ]
+      },
+      {
+        "text": "运维",
+        "collapsed": true,
+        "items": [
+          {
+            "text": "SSH端口转发",
+            "link": "/posts/ops/ssh-port-forwarding/ssh-port-forwarding.html",
+            "date": 1783075680000
           }
         ]
       },
