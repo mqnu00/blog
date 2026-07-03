@@ -163,21 +163,22 @@ async function githubOauth() {
 if (typeof window !== "undefined") {
   watch(
     () => localStorage.getItem("access_token"),
-    async (newVal: string | null) => {
+    (newVal: string | null) => {
       if (newVal != null && newVal !== "") {
-        const testClient = await GithubDiscussApi.create(
+        const testClient = new GithubDiscussApi(
           newVal,
           import.meta.env.VITE_GITHUB_DISCUSS_OWNER,
           import.meta.env.VITE_GITHUB_DISCUSS_REP,
           import.meta.env.VITE_GITHUB_REPO_ID,
         );
-        const res = await testClient.testToken();
-        if (res) {
-          access_token.value = newVal;
-        } else {
-          access_token.value = null;
-          localStorage.removeItem("access_token");
-        }
+        testClient.testToken().then((res) => {
+          if (res) {
+            access_token.value = newVal;
+          } else {
+            access_token.value = null;
+            localStorage.removeItem("access_token");
+          }
+        });
       }
     },
     { immediate: true },
