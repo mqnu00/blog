@@ -3,7 +3,7 @@ import path from 'path'
 import matter from 'gray-matter'
 import dotenv from 'dotenv'
 import { ProxyAgent, fetch } from 'undici'
-import { getSdk } from '../.vitepress/utils/github/graphql/github'
+import { getSdk } from 'blog/.vitepress/utils/github/graphql/github'
 import { GraphQLClient } from 'graphql-request'
 
 // 加载环境变量
@@ -14,13 +14,13 @@ dotenv.config({
 
 async function createGithubClient(token: string, proxyUrl?: string) {
   const customFetch: typeof fetch = proxyUrl
-    ? ((input: URL | RequestInfo, init?: RequestInit) => {
+    ? (((input: URL | RequestInfo, init?: RequestInit) => {
         const undiciInit = {
           ...init,
           dispatcher: new ProxyAgent(proxyUrl),
         }
         return fetch(input as string | URL, undiciInit as any) as unknown as Promise<Response>
-      }) as typeof fetch
+      }) as typeof fetch)
     : fetch
 
   return new GraphQLClient('https://api.github.com/graphql', {
