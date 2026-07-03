@@ -8,6 +8,12 @@ tags:
   - nat
 url: >-
   https://mqnu00.github.io/blog/posts/ops/ssh-port-forwarding/ssh-port-forwarding.html
+discussion:
+  id: D_kwDOQdT3Qc4AniLU
+  number: 108
+  title: SSH端口转发
+  url: 'https://github.com/mqnu00/blog/discussions/108'
+  createdAt: '2026-07-03T08:06:30Z'
 ---
 
 # 背景
