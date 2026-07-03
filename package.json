@@ -5,6 +5,7 @@
     "docs:tbuild": "NODE_ENV_TEST=true vitepress build blog",
     "docs:build": "vitepress build blog",
     "docs:preview": "vitepress preview blog",
+    "create-discussions": "tsx blog/scripts/create-discussions.ts",
     "codegen:github": "pnpm graphql-codegen --config ./blog/.vitepress/utils/github/graphql/graphql.config.yml",
     "eslint": "npx eslint --fix ./blog",
     "stylelint": "npx stylelint --fix ./blog",
