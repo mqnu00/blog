@@ -11,7 +11,6 @@ import { load } from 'cheerio'
 import { getGithubHistory } from './utils/github/gitHistory'
 import { generateSidebar } from './utils/sideCondig'
 import dotenv from 'dotenv'
-import { GithubDiscussApi } from './utils/github/discussion'
 import moment from 'moment'
 
 const mode = process.env.NODE_ENV_TEST === 'true' ? 'test' : process.env.NODE_ENV || 'development'
@@ -19,13 +18,6 @@ console.log(mode)
 dotenv.config({
   path: path.resolve(process.cwd(), `./blog/.env.${mode}`),
 })
-const discussClient = new GithubDiscussApi(
-  process.env.GITHUB_TOKEN || '',
-  process.env.VITE_GITHUB_DISCUSS_OWNER,
-  process.env.VITE_GITHUB_DISCUSS_REP,
-  process.env.VITE_GITHUB_REPO_ID,
-  process.env.Local === '1' ? process.env.VITE_GITHUB_PROXY : undefined,
-)
 
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
@@ -131,28 +123,6 @@ export default defineConfig({
     }
 
     pageData.url = `${baseUrl}/${pageData.filePath.replace('.md', '.html')}`
-    //   配置讨论
-    if (
-      pageData.frontmatter.discussion == null &&
-      pageData.title != null &&
-      pageData.title !== ''
-    ) {
-      try {
-        console.log(`创建讨论： ${pageData.title}`)
-        const discuss = await discussClient.createDiscussion(
-          pageData.title,
-          pageData.url,
-          process.env.VITE_GITHUB_DISCUSS_TYPE_ID,
-        )
-        if (discuss) {
-          pageData.frontmatter.discussion = discuss
-        } else {
-          throw new Error('创建讨论失败')
-        }
-      } catch (error) {
-        console.error('创建讨论失败:', error)
-      }
-    }
 
     // -------------------------
     // 写回 Markdown 文件

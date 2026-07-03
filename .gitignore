@@ -5,6 +5,7 @@ dist/
 .DS_Store
 .idea/
 .vscode/
+.mimocode/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
@@ -15,4 +16,7 @@ coverage/
 *.lock
 .vitepress/cache/
 blog/.vitepress/cache/
+blog/.vitepress/.temp/
 blog/.vitepress/dist/
+
+localconfig.json
