@@ -4,7 +4,7 @@
         <title>广习习的博客</title>
         <link>https://mqnu00.github.io/blog/</link>
         <description>分享技术与生活的个人博客</description>
-        <lastBuildDate>Fri, 03 Jul 2026 08:35:21 GMT</lastBuildDate>
+        <lastBuildDate>Wed, 05 Aug 2026 07:28:50 GMT</lastBuildDate>
         <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
         <generator>https://github.com/jpmonette/feed</generator>
         <language>en-US</language>
@@ -14,6 +14,81 @@
             <link>https://mqnu00.github.io/blog/</link>
         </image>
         <copyright>© 2025 广习习</copyright>
+        <item>
+            <title><![CDATA[ai-coding:文档转换试卷系统]]></title>
+            <link>https://mqnu00.github.io/blog//posts/ai/exam-generator.html</link>
+            <guid isPermaLink="false">https://mqnu00.github.io/blog//posts/ai/exam-generator.html</guid>
+            <pubDate>Wed, 05 Aug 2026 06:33:00 GMT</pubDate>
+            <content:encoded><![CDATA[<div><h1 id="背景" tabindex="-1">背景 <a class="header-anchor" href="#背景" aria-label="Permalink to &quot;背景&quot;">​</a></h1><p>最近有考试，给了考试的题目，存在word文档里，要练习。</p><p>但是直接看文档，没有写题的感觉。</p><p>想着说能不能写一个word转json，提取出所有考题，然后加上一个在线的考试系统。</p><p>考试系统还是很简单的，难点在word转json方面，word内容，考卷题目的格式不一定，只能通过AI读取转换，就是在这里遇到了难点。</p><h1 id="解决方法" tabindex="-1">解决方法 <a class="header-anchor" href="#解决方法" aria-label="Permalink to &quot;解决方法&quot;">​</a></h1><h2 id="提示词-整个文档转换" tabindex="-1">提示词 + 整个文档转换 <a class="header-anchor" href="#提示词-整个文档转换" aria-label="Permalink to &quot;提示词 + 整个文档转换&quot;">​</a></h2><p>整个文档直接上传，大概有34万token。</p><p>提示词如下：</p><div class="language- vp-adaptive-theme"><span class="lang"></span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>你是一个专业的考试题目提取助手。请从提供的文本中提取所有考试题目，严格返回JSON数组格式。</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>对于每道题目，识别题型并返回以下结构：</span></span>
+<span class="line"><span>{</span></span>
+<span class="line"><span>  "type": "题目类型: single_choice(单选题) | multiple_choice(多选题) | true_false(判断题) | fill_blank(填空题) | short_answer(简答题)",</span></span>
+<span class="line"><span>  "content": "题目内容",</span></span>
+<span class="line"><span>  "options": ["选项A", "选项B", ...],</span></span>
+<span class="line"><span>  "answer": "正确答案",</span></span>
+<span class="line"><span>  "difficulty": "难度: easy | medium | hard",</span></span>
+<span class="line"><span>  "tags": ["相关标签"]</span></span>
+<span class="line"><span>}</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>规则：</span></span>
+<span class="line"><span>1. 只返回JSON数组，不要包含任何其他文字或markdown标记</span></span>
+<span class="line"><span>2. 单选题answer为单个选项字母如"A"，多选题answer为字母数组如["A","C"]</span></span>
+<span class="line"><span>3. 判断题answer为"对"或"错"</span></span>
+<span class="line"><span>4. 如果文本中没有题目，返回空数组[]`,</span></span></code></pre></div><p>效果不太好，我一开始大概是截取了 3000tokens 的试题做了测试，运行没有问题，返回的json也正常。</p><p>但是直接把整个文档发送过去，就出现了几个缺点：</p><ol><li>运行速度慢，需要等待很久，调试困难</li><li>提示词被弱化</li><li>直接返回文字/返回过长被截断导致json识别错误</li></ol><h2 id="提示词-tools" tabindex="-1">提示词 + tools <a class="header-anchor" href="#提示词-tools" aria-label="Permalink to &quot;提示词 + tools&quot;">​</a></h2><p>使用分批(2000~3000tokens一批) 提取，分批返回识别结果。</p><p>这里可能有疑问万一把题目切成两半？可以注意到这个分批不是程序切分后分批，而是靠模型调用tool切分读取自己想读的地方。</p><p>这个方法就好很多了，用户可以看到多轮对话的进度（看到第几轮对话），等待就不会太焦虑，提取结果是每批返回的也能看到进度。</p><h3 id="提示词" tabindex="-1">提示词 <a class="header-anchor" href="#提示词" aria-label="Permalink to &quot;提示词&quot;">​</a></h3><div class="language-js vp-adaptive-theme"><span class="lang">js</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>const</span><span> systemPrompt</span><span> =</span><span> `你是一个专业的考试题目提取助手。你需要从文档中提取所有考试题目。</span></span>
+<span class="line"></span>
+<span class="line"><span>文档总长度：${</span><span>documentText</span><span>.</span><span>length</span><span>} 字符。</span></span>
+<span class="line"></span>
+<span class="line"><span>使用 read_file 工具分段读取文档（每次建议读 2000-3000 字符），边读边识别题目。</span></span>
+<span class="line"><span>识别出题目后，立即使用 task_finish 提交（可分批，每批不超过20道）。</span></span>
+<span class="line"><span>全部处理完毕后，最后一批设置 done: true。</span></span>
+<span class="line"></span>
+<span class="line"><span>题目格式要求：</span></span>
+<span class="line"><span>- type: single_choice / multiple_choice / true_false / fill_blank / short_answer</span></span>
+<span class="line"><span>- content: 纯题干，不含选项</span></span>
+<span class="line"><span>- options: 选项数组，非选择题为空数组 []</span></span>
+<span class="line"><span>- answer: 单选为"A"，多选为["A","C"]（JSON数组字符串），判断为"对"/"错"</span></span>
+<span class="line"><span>- difficulty: easy / medium / hard</span></span>
+<span class="line"><span>- tags: 相关标签数组</span></span>
+<span class="line"></span>
+<span class="line"><span>重要：</span></span>
+<span class="line"><span>- 仔细阅读每一段文档，不要遗漏任何题目</span></span>
+<span class="line"><span>- 保持题目原文的准确性</span></span>
+<span class="line"><span>- 如果文档中没有题目，立即 task_finish 提交空数组，done: true`</span></span></code></pre></div><h3 id="tools" tabindex="-1">tools <a class="header-anchor" href="#tools" aria-label="Permalink to &quot;tools&quot;">​</a></h3><p>下面定义了两个tool，考试系统运行的时候，前端解析完上传的文件，触发模型API，当模型返回调用tools的命令，前端就会去执行对应的函数</p><div class="language-js vp-adaptive-theme"><span class="lang">js</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>const</span><span> TOOLS</span><span> =</span><span> [</span></span>
+<span class="line"><span>  {</span></span>
+<span class="line"><span>    type: </span><span>'function'</span><span> as</span><span> const</span><span>,</span></span>
+<span class="line"><span>    function: {</span></span>
+<span class="line"><span>      name: </span><span>'read_file'</span><span>,</span></span>
+<span class="line"><span>      description:</span></span>
+<span class="line"><span>        '读取待解析文档的指定区间。start 从 0 开始（含），limit 为读取的字符数。每次不要读取超过 3000 字符。'</span><span>,</span></span>
+<span class="line"><span>      parameters: {</span></span>
+<span class="line"><span>        type: </span><span>'object'</span><span> as</span><span> const</span><span>,</span></span>
+<span class="line"><span>        properties: {</span></span>
+<span class="line"><span>          start: { type: </span><span>'integer'</span><span> as</span><span> const</span><span>, description: </span><span>'起始字符位置（从0开始）'</span><span> },</span></span>
+<span class="line"><span>          limit: { type: </span><span>'integer'</span><span> as</span><span> const</span><span>, description: </span><span>'读取的字符数，建议不超过3000'</span><span> },</span></span>
+<span class="line"><span>        },</span></span>
+<span class="line"><span>        required: [</span><span>'start'</span><span>, </span><span>'limit'</span><span>],</span></span>
+<span class="line"><span>      },</span></span>
+<span class="line"><span>    },</span></span>
+<span class="line"><span>  },</span></span>
+<span class="line"><span>  {</span></span>
+<span class="line"><span>    type: </span><span>'function'</span><span> as</span><span> const</span><span>,</span></span>
+<span class="line"><span>    function: {</span></span>
+<span class="line"><span>      name: </span><span>'task_finish'</span><span>,</span></span>
+<span class="line"><span>      description:</span></span>
+<span class="line"><span>        '提交提取到的题目。如果题目较多可分批提交，每批不超过20道。最后一批请设置 done: true。文档中没有题目时，提交空数组并设置 done: true。'</span><span>,</span></span>
+<span class="line"><span>      parameters: {</span></span>
+<span class="line"><span>        type: </span><span>'object'</span><span> as</span><span> const</span><span>,</span></span>
+<span class="line"><span>        properties: {</span></span>
+<span class="line"><span>          questions: {},    </span><span>// 题目类型</span></span>
+<span class="line"><span>          done: { type: </span><span>'boolean'</span><span> as</span><span> const</span><span>, description: </span><span>'是否为最后一批（true=任务完成）'</span><span> },</span></span>
+<span class="line"><span>        },</span></span>
+<span class="line"><span>        required: [</span><span>'questions'</span><span>, </span><span>'done'</span><span>],</span></span>
+<span class="line"><span>      },</span></span>
+<span class="line"><span>    },</span></span>
+<span class="line"><span>  },</span></span>
+<span class="line"><span>]</span></span></code></pre></div><h1 id="总结" tabindex="-1">总结 <a class="header-anchor" href="#总结" aria-label="Permalink to &quot;总结&quot;">​</a></h1><p>整体的优化方法就是提供给模型一个窗口，让模型自由的扫描这个文档。</p><p>但必须承认这个方法很依赖模型的能力，如果模型检测不出来题目被切断，不会自动扩大缩小扫描窗口，这个方法也是捉瞎。</p></div>]]></content:encoded>
+        </item>
         <item>
             <title><![CDATA[在win11开发兼容ie的网页]]></title>
             <link>https://mqnu00.github.io/blog//posts/frontend/develop-ie-win11/develop-ie-win11.html</link>
@@ -296,6 +371,17 @@
   ],
   "sidebar": {
     "/posts/": [
+      {
+        "text": "AI",
+        "collapsed": true,
+        "items": [
+          {
+            "text": "ai-coding:文档转换试卷系统",
+            "link": "/posts/ai/exam-generator.html",
+            "date": 1785940380000
+          }
+        ]
+      },
       {
         "text": "前端",
         "collapsed": true,
