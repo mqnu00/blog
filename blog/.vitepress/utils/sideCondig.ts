@@ -15,6 +15,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   summary: '总结',
   vitepress: 'vitepress示例',
   ops: '运维',
+  ai: 'AI',
 }
 
 function parseMD(filePath: string): { title: string; date: number | null } {
