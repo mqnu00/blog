@@ -34,12 +34,12 @@ import {
 } from "naive-ui";
 import Page from "./Page.vue";
 import { useData } from "vitepress";
-import lightThemeOverrides from './naive-ui-light-theme-overrides.json'
-import nightThemeOverrides from './naive-ui-night-theme-overrides.json'
+import lightThemeOverrides from "./naive-ui-light-theme-overrides.json";
+import nightThemeOverrides from "./naive-ui-night-theme-overrides.json";
 
 const { isDark } = useData();
 const isClient = ref(false);
-const isDev = import.meta.env.DEV
+const isDev = import.meta.env.DEV;
 
 const theme = computed(() => {
   if (isClient.value) {
@@ -49,23 +49,24 @@ const theme = computed(() => {
 });
 const themeOverrides = computed(() => {
   if (isDark.value) {
-    return nightThemeOverrides
-  } else return lightThemeOverrides
-})
+    return nightThemeOverrides;
+  } else return lightThemeOverrides;
+});
 
 // 动态生成 CSS 变量
 const cssVars = computed(() => {
   if (isClient.value) {
     return {
+      // 晴山新霁 v2：浅色取月白冷调，深色取深夜
       "--hint-bg-color": isDark.value
-        ? "rgb(91, 91, 91)"
-        : "rgb(233, 233, 238)",
+        ? "rgb(19, 30, 44)"
+        : "rgb(220, 232, 237)",
       "--discuss-bg-color": isDark.value
-        ? "rgb(0, 0, 0)"
-        : "rgb(255, 255, 255)",
+        ? "rgb(13, 21, 32)"
+        : "rgb(238, 247, 242)",
       "--hint-content-bg-hover": isDark.value
-        ? "rgb(95, 95, 95)"
-        : "rgb(233, 233, 238)",
+        ? "rgb(25, 35, 50)"
+        : "rgb(215, 228, 235)",
     };
   }
   return null;

@@ -1,58 +1,113 @@
 /**
  * Customize default theme styling by overriding CSS variables:
  * https://github.com/vuejs/vitepress/blob/main/src/client/theme-default/styles/vars.css
+ *
+ * 主题：晴山新霁 · 远岫凝青 (v2 · 明朗清爽)
+ * 基准色 #8299B5 (晴山蓝) —— 钴蓝/霁青/秋波蓝系国色
+ * 配色详情见 ./THEME.md
  */
+
+/**
+ * 国色设计令牌 (Design Tokens)
+ *
+ * 60% 底衬：月白 #eef7f2 (浅) / 深夜 #0d1520 (深)
+ * 30% 主体：钴蓝系 (浅) / 秋波蓝系 (深) —— 饱和鲜亮
+ * 10% 点睛：落霞红 #cf4813 (朱砂印章)
+ * -------------------------------------------------------------------------- */
+
+:root {
+  /* 底衬基调 (60%) —— 冷调清纸 */
+  --dds-c-paper: #eef7f2; /* 月白 · 页面底衬 */
+  --dds-c-paper-2: #e6eff4; /* 月白-深 · 次级底衬 */
+  --dds-c-paper-3: #e0eaf0; /* 月白-深 · 内嵌面板 */
+  --dds-c-surface: #ffffff; /* 纯素白 · 卡片 */
+
+  /* 骨干主体 (30%) —— 钴蓝阶梯 · 饱和鲜亮 */
+  --dds-c-brand-1: #0d7999; /* 翠蓝-沉 · 彩色正文/激活态 (月白上 4.56:1) */
+  --dds-c-brand-2: #1a94bc; /* 钴蓝 · 悬停态 (鲜亮) */
+  --dds-c-brand-3: #1576a0; /* 钴蓝-深 · 实底按钮 (衬白字 5.08:1) */
+  --dds-c-brand-base: #8299b5; /* 基准色 · 原始锚点 */
+  --dds-c-brand-soft: rgba(21, 118, 160, 0.12);
+
+  /* 灵魂点睛 (10%) —— 朱砂落霞 */
+  --dds-c-accent: #cf4813; /* 落霞红 · 印章点睛 */
+  --dds-c-accent-1: #a63a10; /* 落霞红-深 */
+  --dds-c-accent-soft: rgba(207, 72, 19, 0.12);
+
+  /* 墨骨文本 */
+  --dds-c-text-1: #1a2940; /* 夜青 · 正文 (月白上 13.39:1) */
+  --dds-c-text-2: #4a5e72; /* 青墨 · 次级文本 (6.13:1) */
+  --dds-c-text-3: #7a8d9e; /* 雾青 · 辅助说明 */
+
+  /* 界面描边 */
+  --dds-c-border: #d8e3e7; /* 云峰白 · 分割线 */
+}
+
+.dark {
+  /* 底衬基调 (60%) —— 深夜 */
+  --dds-c-paper: #0d1520; /* 深夜 · 页面底衬 */
+  --dds-c-paper-2: #111a27; /* 深夜-浅 · 次级底衬 */
+  --dds-c-paper-3: #182434; /* 深夜-浅 · 内嵌面板 */
+  --dds-c-surface: #131e2c; /* 夜岫 · 卡片 */
+
+  /* 骨干主体 (30%) —— 秋波蓝/霁青阶梯 */
+  --dds-c-brand-1: #8abcd1; /* 秋波蓝 · 彩色正文/激活态 (深夜上 8.9:1) */
+  --dds-c-brand-2: #8299b5; /* 基准色 · 悬停态 (6.26:1) */
+  --dds-c-brand-3: #1a94bc; /* 钴蓝 · 实底按钮 (衬白字 5.24:1) */
+  --dds-c-brand-soft: rgba(26, 148, 188, 0.16);
+
+  /* 灵魂点睛 (10%) */
+  --dds-c-accent: #cf4813; /* 落霞红 */
+  --dds-c-accent-1: #e0743f; /* 落霞红-亮 (暗底可读) */
+  --dds-c-accent-soft: rgba(207, 72, 19, 0.16);
+
+  /* 墨骨文本 */
+  --dds-c-text-1: #f0f4f8; /* 冷白 · 正文 */
+  --dds-c-text-2: #99afc0; /* 雾蓝 · 次级文本 (8.07:1) */
+  --dds-c-text-3: #6a8094; /* 雾蓝-深 · 辅助说明 */
+
+  /* 界面描边 */
+  --dds-c-border: #2d2e36; /* 牛角灰 · 分割线 */
+}
 
 /**
  * Colors
  *
- * Each colors have exact same color scale system with 3 levels of solid
- * colors with different brightness, and 1 soft color.
+ * VitePress color scale system: brand-1/2/3/soft
  *
- * - `XXX-1`: The most solid color used mainly for colored text. It must
- *   satisfy the contrast ratio against when used on top of `XXX-soft`.
- *
- * - `XXX-2`: The color used mainly for hover state of the button.
- *
- * - `XXX-3`: The color for solid background, such as bg color of the button.
- *   It must satisfy the contrast ratio with pure white (#ffffff) text on
- *   top of it.
- *
- * - `XXX-soft`: The color used for subtle background such as custom container
- *   or badges. It must satisfy the contrast ratio when putting `XXX-1` colors
- *   on top of it.
- *
- *   The soft color must be semi transparent alpha channel. This is crucial
- *   because it allows adding multiple "soft" colors on top of each other
- *   to create a accent, such as when having inline code block inside
- *   custom containers.
- *
- * - `default`: The color used purely for subtle indication without any
- *   special meanings attached to it such as bg color for menu hover state.
- *
- * - `brand`: Used for primary brand colors, such as link text, button with
- *   brand theme, etc.
- *
- * - `tip`: Used to indicate useful information. The default theme uses the
- *   brand color for this by default.
- *
- * - `warning`: Used to indicate warning to the users. Used in custom
- *   container, badges, etc.
- *
- * - `danger`: Used to show error, or dangerous message to the users. Used
- *   in custom container, badges, etc.
+ * - `XXX-1`: Colored text — must contrast against soft bg.
+ * - `XXX-2`: Hover state of button.
+ * - `XXX-3`: Solid bg — must contrast with white text.
+ * - `XXX-soft`: Subtle background (semi-transparent).
  * -------------------------------------------------------------------------- */
 
 :root {
-  --vp-c-default-1: var(--vp-c-gray-1);
-  --vp-c-default-2: var(--vp-c-gray-2);
-  --vp-c-default-3: var(--vp-c-gray-3);
-  --vp-c-default-soft: var(--vp-c-gray-soft);
+  /* 纸面背景 —— 冷调清纸 (60%) */
+  --vp-c-bg: var(--dds-c-paper);
+  --vp-c-bg-alt: var(--dds-c-paper-2);
+  --vp-c-bg-soft: var(--dds-c-paper-3);
+  --vp-c-bg-elv: var(--dds-c-surface);
 
-  --vp-c-brand-1: var(--vp-c-indigo-1);
-  --vp-c-brand-2: var(--vp-c-indigo-2);
-  --vp-c-brand-3: var(--vp-c-indigo-3);
-  --vp-c-brand-soft: var(--vp-c-indigo-soft);
+  /* 墨骨文本 */
+  --vp-c-text-1: var(--dds-c-text-1);
+  --vp-c-text-2: var(--dds-c-text-2);
+  --vp-c-text-3: var(--dds-c-text-3);
+
+  /* 描边 */
+  --vp-c-divider: var(--dds-c-border);
+  --vp-c-border: var(--dds-c-border);
+  --vp-c-gutter: var(--dds-c-border);
+
+  --vp-c-default-1: #7a8d9e; /* 雾青 */
+  --vp-c-default-2: #4a5e72; /* 青墨 */
+  --vp-c-default-3: #0d7999; /* 翠蓝-沉 */
+  --vp-c-default-soft: rgba(21, 118, 160, 0.12);
+
+  /* 品牌主体 —— 钴蓝 (30%) */
+  --vp-c-brand-1: var(--dds-c-brand-1);
+  --vp-c-brand-2: var(--dds-c-brand-2);
+  --vp-c-brand-3: var(--dds-c-brand-3);
+  --vp-c-brand-soft: var(--dds-c-brand-soft);
 
   --vp-c-tip-1: var(--vp-c-brand-1);
   --vp-c-tip-2: var(--vp-c-brand-2);
@@ -64,10 +119,23 @@
   --vp-c-warning-3: var(--vp-c-yellow-3);
   --vp-c-warning-soft: var(--vp-c-yellow-soft);
 
-  --vp-c-danger-1: var(--vp-c-red-1);
-  --vp-c-danger-2: var(--vp-c-red-2);
-  --vp-c-danger-3: var(--vp-c-red-3);
-  --vp-c-danger-soft: var(--vp-c-red-soft);
+  /* 点睛警示 —— 落霞红 (10%) */
+  --vp-c-danger-1: var(--dds-c-accent-1);
+  --vp-c-danger-2: var(--dds-c-accent);
+  --vp-c-danger-3: var(--dds-c-accent);
+  --vp-c-danger-soft: var(--dds-c-accent-soft);
+
+  /* 代码块 —— 冷调 */
+  --vp-code-block-bg: var(--dds-c-paper-2);
+  --vp-code-inline-bg: var(--dds-c-paper-3);
+  --vp-code-line-highlight-color: rgba(21, 118, 160, 0.14);
+}
+
+.dark {
+  --vp-c-default-1: #6a8094; /* 雾蓝-深 */
+  --vp-c-default-2: #99afc0; /* 雾蓝 */
+  --vp-c-default-3: #8abcd1; /* 秋波蓝 */
+  --vp-c-default-soft: rgba(26, 148, 188, 0.16);
 }
 
 /**
@@ -88,13 +156,14 @@
 
 /**
  * Component: Home
+ * 意境：晴山新霁 —— 雨后远山，钴蓝如洗
  * -------------------------------------------------------------------------- */
 
 :root {
   --vp-home-hero-name-color: transparent;
-  --vp-home-hero-name-background: -webkit-linear-gradient(120deg, #bd34fe 30%, #41d1ff);
+  --vp-home-hero-name-background: linear-gradient(120deg, #0d7999 30%, #8abcd1);
 
-  --vp-home-hero-image-background-image: linear-gradient(-45deg, #bd34fe 50%, #47caff 50%);
+  --vp-home-hero-image-background-image: linear-gradient(-45deg, #1a94bc 50%, #63bbd0 50%);
   --vp-home-hero-image-filter: blur(44px);
 }
 
@@ -119,6 +188,22 @@
   --vp-custom-block-tip-text: var(--vp-c-text-1);
   --vp-custom-block-tip-bg: var(--vp-c-brand-soft);
   --vp-custom-block-tip-code-bg: var(--vp-c-brand-soft);
+
+  --vp-custom-block-danger-border: transparent;
+  --vp-custom-block-danger-bg: var(--dds-c-accent-soft);
+  --vp-custom-block-danger-code-bg: var(--dds-c-accent-soft);
+}
+
+/**
+ * Component: Selection (远山烟色)
+ * -------------------------------------------------------------------------- */
+
+::selection {
+  background: rgba(26, 148, 188, 0.25);
+}
+
+.dark ::selection {
+  background: rgba(99, 187, 208, 0.35);
 }
 
 /**
