@@ -4,7 +4,7 @@
         <title>广习习的博客</title>
         <link>https://mqnu00.github.io/blog/</link>
         <description>分享技术与生活的个人博客</description>
-        <lastBuildDate>Wed, 05 Aug 2026 07:28:50 GMT</lastBuildDate>
+        <lastBuildDate>Fri, 11 Sep 2026 07:04:05 GMT</lastBuildDate>
         <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
         <generator>https://github.com/jpmonette/feed</generator>
         <language>en-US</language>
@@ -131,6 +131,19 @@
 <span class="line"><span>        // ......</span></span>
 <span class="line"><span>    })</span></span>
 <span class="line"><span>})</span></span></code></pre></div><h1 id="总结" tabindex="-1">总结 <a class="header-anchor" href="#总结" aria-label="Permalink to &quot;总结&quot;">​</a></h1><p>语法不习惯是一方面，保证ie8和现代浏览器网页的显示行为一致又是一个难点。</p><p>最近看了一圈jquery和extjs，没看到查看大图的组件。</p><p>尝试写个demo，就发现事件监听、图像DOM的属性等等的，ie8和现代浏览器不一致的问题。</p></div>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[远程桌面端口转发]]></title>
+            <link>https://mqnu00.github.io/blog//posts/ops/remote-desktop-port-forwarding/remote-desktop-port-forwarding.html</link>
+            <guid isPermaLink="false">https://mqnu00.github.io/blog//posts/ops/remote-desktop-port-forwarding/remote-desktop-port-forwarding.html</guid>
+            <pubDate>Fri, 11 Sep 2026 06:49:00 GMT</pubDate>
+            <content:encoded><![CDATA[<div><h1 id="远程桌面端口转发" tabindex="-1">远程桌面端口转发 <a class="header-anchor" href="#远程桌面端口转发" aria-label="Permalink to &quot;远程桌面端口转发&quot;">​</a></h1><h2 id="背景" tabindex="-1">背景 <a class="header-anchor" href="#背景" aria-label="Permalink to &quot;背景&quot;">​</a></h2><p>基于上一篇 <a href="https://mqnu00.github.io/blog/posts/ops/ssh-port-forwarding/ssh-port-forwarding.html" target="_blank" rel="noreferrer">SSH端口转发</a>。</p><p>有一天想起来家里用来打游戏的电脑A还开着，A和服务器B在同一局域网下，我的笔记本C不在局域网，通过 FRPC 透传了B的 SSH 端口。</p><p>想要实现B转发A的3389远程桌面端口。</p><h2 id="过程" tabindex="-1">过程 <a class="header-anchor" href="#过程" aria-label="Permalink to &quot;过程&quot;">​</a></h2><h3 id="探测a的ip" tabindex="-1">探测A的IP <a class="header-anchor" href="#探测a的ip" aria-label="Permalink to &quot;探测A的IP&quot;">​</a></h3><p>路由器只绑定了B的IP(192.168.10.37)，A没有绑定，所以要找。</p><p>最终确定了A是192.168.10.11(DESKTOP-RVFIIOO)</p><p>步骤：</p><ol><li><p>并发扫描 192.168.10.0/24 网段，读 <strong>ARP 缓存</strong>，找到9台在活动的设备（经过MAC去重）</p><table tabindex="0"><thead><tr><th>IP</th><th>MAC</th><th>备注</th></tr></thead><tbody><tr><td>192.168.10.1</td><td>d4:b7:09:24:db:71</td><td>路由器（网关）</td></tr><tr><td>192.168.10.4</td><td>2c:19:5c:29:6d:6c</td><td></td></tr><tr><td>192.168.10.7</td><td>b4:0e🇩🇪6f:49:6a</td><td></td></tr><tr><td>192.168.10.11</td><td>80:84:89:8f:a1:1f</td><td></td></tr><tr><td>192.168.10.50</td><td>ea:f5:2a:73:84:94</td><td>与 .75 同 MAC</td></tr><tr><td>192.168.10.60</td><td>16:91:1d:5b:5e:b9</td><td>与 .67 同 MAC</td></tr><tr><td>192.168.10.64</td><td>4c:6b:b8:4f:f7:87</td><td></td></tr><tr><td>192.168.10.66</td><td>90:fb:5d:e3:e5:1a</td><td>与 .77 同 MAC</td></tr><tr><td>192.168.10.67</td><td>16:91:1d:5b:5e:b9</td><td></td></tr><tr><td>192.168.10.71</td><td>ee:dc:b1:94:8f:45</td><td></td></tr><tr><td>192.168.10.75</td><td>ea:f5:2a:73:84:94</td><td></td></tr><tr><td>192.168.10.77</td><td>90:fb:5d:e3:e5:1a</td><td></td></tr></tbody></table></li><li><p>根据<strong>特征</strong>分辨windows主机</p><blockquote><p>特征：</p><ul><li><p>TTL Windows 默认 128，Linux 64，网络设备 255 通过 ping 发送 ICMP包，只有4台响应</p><table tabindex="0"><thead><tr><th>IP</th><th>TTL</th></tr></thead><tbody><tr><td>192.168.10.1</td><td>64</td></tr><tr><td>192.168.10.4</td><td>64</td></tr><tr><td>192.168.10.11</td><td>128</td></tr><tr><td>192.168.10.77</td><td>64</td></tr></tbody></table></li><li><p>windows 一般会开放 135/139/445/3389 等端口 通过TCP探测端口是否开放，最后确定只有 192.168.10.11 都符合</p></li></ul></blockquote></li><li><p>通过<strong>NetBIOS over TCP/IP (NetBT) 协议</strong>查询主机名</p><div class="language-shell vp-adaptive-theme"><span class="lang">shell</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>$</span><span> nmblookup</span><span> -A</span><span> 192.168.10.11</span><span> 2&gt;&amp;1</span></span>
+<span class="line"><span>Looking</span><span> up</span><span> status</span><span> of</span><span> 192.168.10.11</span></span>
+<span class="line"><span>	DESKTOP-RVFIIOO</span><span> &lt;</span><span>0</span><span>0&gt;</span><span> -</span><span>         M</span><span> &lt;</span><span>ACTIV</span><span>E</span><span>&gt;</span><span> </span></span>
+<span class="line"><span>	WORKGROUP</span><span>       &lt;</span><span>0</span><span>0&gt;</span><span> -</span><span> &lt;</span><span>GROU</span><span>P</span><span>&gt;</span><span> M</span><span> &lt;</span><span>ACTIV</span><span>E</span><span>&gt;</span><span> </span></span>
+<span class="line"><span>	DESKTOP-RVFIIOO</span><span> &lt;</span><span>2</span><span>0&gt;</span><span> -</span><span>         M</span><span> &lt;</span><span>ACTIV</span><span>E</span><span>&gt;</span><span> </span></span>
+<span class="line"></span>
+<span class="line"><span>	MAC</span><span> Address</span><span> =</span><span> 80-84-89-8F-A1-1F</span></span></code></pre></div></li></ol><h3 id="通过-ssh-端口转发" tabindex="-1">通过 SSH 端口转发 <a class="header-anchor" href="#通过-ssh-端口转发" aria-label="Permalink to &quot;通过 SSH 端口转发&quot;">​</a></h3><div class="language-shell vp-adaptive-theme"><span class="lang">shell</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>ssh</span><span> -N</span><span> -L</span><span> 3389:192.168.10.11:3389</span><span> -p</span><span> &lt;</span><span>frp映射的SSH端</span><span>口</span><span>&gt;</span><span> &lt;</span><span>用户</span><span>名</span><span>&gt;</span><span>@</span><span>&lt;</span><span>frps公网I</span><span>P</span><span>&gt;</span></span></code></pre></div><h2 id="最终效果" tabindex="-1">最终效果 <a class="header-anchor" href="#最终效果" aria-label="Permalink to &quot;最终效果&quot;">​</a></h2><p><!----></p></div>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[SSH端口转发]]></title>
@@ -402,6 +415,11 @@
         "text": "运维",
         "collapsed": true,
         "items": [
+          {
+            "text": "远程桌面端口转发",
+            "link": "/posts/ops/remote-desktop-port-forwarding/remote-desktop-port-forwarding.html",
+            "date": 1789138140000
+          },
           {
             "text": "SSH端口转发",
             "link": "/posts/ops/ssh-port-forwarding/ssh-port-forwarding.html",
