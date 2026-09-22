@@ -4,6 +4,7 @@ dist/
 *.log
 .env
 .DS_Store
+.history
 .idea/
 .vscode/
 .mimocode/
