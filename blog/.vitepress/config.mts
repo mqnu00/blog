@@ -10,6 +10,7 @@ import matter from 'gray-matter'
 import { load } from 'cheerio'
 import { getGithubHistory } from './utils/github/gitHistory'
 import { generateSidebar } from './utils/sideCondig'
+import { generatePostsIndex, postsIndexPlugin } from './utils/postsIndex'
 import dotenv from 'dotenv'
 import moment from 'moment'
 
@@ -18,6 +19,16 @@ console.log(mode)
 dotenv.config({
   path: path.resolve(process.cwd(), `./blog/.env.${mode}`),
 })
+
+const POSTS_DIR = path.resolve(__dirname, '..', 'posts')
+const POSTS_INDEX_PATH = path.join(POSTS_DIR, 'index.md')
+
+// 构建/启动前根据 posts 目录重新生成博客文章列表页
+try {
+  generatePostsIndex({ postsDir: POSTS_DIR, indexPath: POSTS_INDEX_PATH })
+} catch (error) {
+  console.error('[posts-index] 生成失败，沿用现有 posts/index.md', error)
+}
 
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
@@ -163,6 +174,8 @@ export default defineConfig({
       allowedHosts: ['mqnu00.github.io'],
     },
     plugins: [
+      // dev 模式下文章增删改后重新生成 posts/index.md
+      postsIndexPlugin({ postsDir: POSTS_DIR, indexPath: POSTS_INDEX_PATH }),
       // 自动导入 Vue API（ref、computed 等）
       AutoImport({
         imports: ['vue'],

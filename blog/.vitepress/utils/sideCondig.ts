@@ -1,6 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import matter from 'gray-matter'
+import { CATEGORY_LABELS } from './postsIndex'
 const POSTS_DIR = path.resolve(__dirname, '../../', 'posts')
 
 declare type SidebarItem = {
@@ -9,13 +10,6 @@ declare type SidebarItem = {
   link?: string
   collapsed?: boolean
   items?: SidebarItem[]
-}
-const CATEGORY_LABELS: Record<string, string> = {
-  frontend: '前端',
-  summary: '总结',
-  vitepress: 'vitepress示例',
-  ops: '运维',
-  ai: 'AI',
 }
 
 function parseMD(filePath: string): { title: string; date: number | null } {
