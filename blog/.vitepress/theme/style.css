@@ -221,3 +221,15 @@
   display: flex;
   justify-content: space-between;
 }
+
+/**
+ * Component: posts/index.md 文章列表
+ * -------------------------------------------------------------------------- */
+
+.posts-date {
+  margin-left: 8px;
+  font-size: 0.85em;
+  font-variant-numeric: tabular-nums;
+  color: var(--vp-c-text-3);
+  white-space: nowrap;
+}

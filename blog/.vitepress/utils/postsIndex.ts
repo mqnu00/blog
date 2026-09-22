@@ -30,7 +30,7 @@ export type PostItem = {
   relativePath: string
   /** 相对 posts/index.md 的链接，如 './vitepress/article-tag.md' */
   link: string
-  /** 毫秒时间戳，无法解析时为 null（视为最旧） */
+  /** 毫秒时间戳：既用于排序，也用于展示（格式固定为 'YYYY-MM-DD HH:mm'）；无效时为 null */
   date: number | null
   categoryKey: string
   categoryLabel: string
@@ -47,16 +47,39 @@ export type PostsIndexOptions = {
   write?: boolean
 }
 
-/** 兼容 frontmatter 里的 'YYYY-MM-DD HH:mm' 字符串与 YAML 解析出的 Date 对象 */
+/**
+ * 解析 date 得到时间戳，排序与展示共用。
+ * 只接受 'YYYY-MM-DD[ HH:mm[:ss]]'（可带毫秒/时区后缀）与 YAML 解析出的 Date，
+ * 统一按字面量的墙上时间（UTC）解释，因此不随构建机器的时区变化。
+ * 其它写法（例如 '2025/01/17'、'待定'）视为无效：不参与排序，也不显示日期。
+ */
 export function parsePostDate(value: unknown): number | null {
   if (value instanceof Date) {
     return Number.isFinite(value.getTime()) ? value.getTime() : null
   }
-  if (typeof value === 'string' && value.trim()) {
-    const timestamp = Date.parse(value.trim().replace(' ', 'T'))
-    return Number.isFinite(timestamp) ? timestamp : null
-  }
-  return null
+  if (typeof value !== 'string' || !value.trim()) return null
+
+  const text = value.trim()
+  const matched = text.match(
+    /^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2})(?::(\d{2}))?)?(?:\.\d+)?(?:Z)?$/,
+  )
+  if (!matched) return null
+
+  const [, year, month, day, hour = '00', minute = '00', second = '00'] = matched
+  return Date.UTC(+year, +month - 1, +day, +hour, +minute, +second)
+}
+
+function pad(value: number): string {
+  return String(value).padStart(2, '0')
+}
+
+/** 时间戳 -> 固定的展示格式 'YYYY-MM-DD HH:mm'（按 UTC 取，与 parsePostDate 的约定一致） */
+export function formatPostDate(date: number | null): string {
+  if (date === null || !Number.isFinite(date)) return ''
+
+  const value = new Date(date)
+  const ymd = `${value.getUTCFullYear()}-${pad(value.getUTCMonth() + 1)}-${pad(value.getUTCDate())}`
+  return `${ymd} ${pad(value.getUTCHours())}:${pad(value.getUTCMinutes())}`
 }
 
 function toPosix(filePath: string): string {
@@ -99,7 +122,14 @@ function readPostMeta(
   if (!title) return null
   if (data.publish === false) return null
 
-  return { title, date: parsePostDate(data.date) }
+  const date = parsePostDate(data.date)
+  if (data.date != null && date === null) {
+    console.warn(
+      `[posts-index] 无法解析 date（期望 'YYYY-MM-DD HH:mm'），已按无日期处理：${relativePath}`,
+    )
+  }
+
+  return { title, date }
 }
 
 /** 收集 blog/posts 下所有可展示的文章，按日期倒序排列 */
@@ -153,6 +183,13 @@ function escapeLinkTarget(relativePath: string): string {
   return /[\s()]/.test(relativePath) ? `<${target}>` : target
 }
 
+/** 渲染一条文章列表项：标题 + 日期（浅色小字，样式见 theme/style.css 的 .posts-date） */
+function renderPostItem(post: PostItem): string {
+  const link = `- [${escapeLinkText(post.title)}](${escapeLinkTarget(post.relativePath)})`
+  const dateText = formatPostDate(post.date)
+  return dateText ? `${link} <span class="posts-date">${dateText}</span>` : link
+}
+
 /** 渲染 posts/index.md 的正文 */
 export function renderPostsIndex(
   posts: Array<PostItem>,
@@ -168,7 +205,7 @@ export function renderPostsIndex(
     lines.push('暂无文章')
   } else {
     for (const post of latest) {
-      lines.push(`- [${escapeLinkText(post.title)}](${escapeLinkTarget(post.relativePath)})`)
+      lines.push(renderPostItem(post))
     }
   }
 
@@ -184,7 +221,7 @@ export function renderPostsIndex(
 
       lines.push(`### ${CATEGORY_LABELS[key]}`, '')
       for (const post of items) {
-        lines.push(`- [${escapeLinkText(post.title)}](${escapeLinkTarget(post.relativePath)})`)
+        lines.push(renderPostItem(post))
       }
       lines.push('')
     }
