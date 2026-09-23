@@ -23,6 +23,12 @@ dotenv.config({
 const POSTS_DIR = path.resolve(__dirname, '..', 'posts')
 const POSTS_INDEX_PATH = path.join(POSTS_DIR, 'index.md')
 
+// 版权年份自动跟随构建时的当前年份，避免每年手动更新
+const SITE_START_YEAR = 2025
+const COPYRIGHT_YEAR = new Date().getFullYear()
+const COPYRIGHT_YEARS =
+  COPYRIGHT_YEAR > SITE_START_YEAR ? `${SITE_START_YEAR}-${COPYRIGHT_YEAR}` : `${SITE_START_YEAR}`
+
 // 构建/启动前根据 posts 目录重新生成博客文章列表页
 try {
   generatePostsIndex({ postsDir: POSTS_DIR, indexPath: POSTS_INDEX_PATH })
@@ -63,7 +69,7 @@ export default defineConfig({
       id: baseUrl,
       link: baseUrl,
       language: siteConfig.site.lang,
-      copyright: '© 2025 广习习',
+      copyright: `© ${COPYRIGHT_YEAR} 广习习`,
       image: 'https://mqnu00.github.io/blog/favicon.ico',
     })
 
@@ -252,7 +258,7 @@ export default defineConfig({
 
     footer: {
       message: 'Released under the MIT License.',
-      copyright: 'Copyright © 2025-present 广习习',
+      copyright: `Copyright © ${COPYRIGHT_YEARS} 广习习`,
     },
 
     docFooter: {
