@@ -17,6 +17,8 @@
               :key="`tag-${index}`"
               size="small"
               type="info"
+              style="cursor: pointer"
+              @click="searchByTag(tag)"
             >
               {{ tag }}
             </NTag>
@@ -158,6 +160,29 @@ async function githubOauth() {
   sessionStorage.setItem("callback_blog_url", window.location.href);
   // 跳转 GitHub
   window.location.href = url;
+}
+
+/**
+ * 点击 tag：带上该 tag 作为关键词打开本地搜索。
+ * VitePress 本地搜索把关键词持久化在 sessionStorage（见 search.options.disableQueryPersistence），
+ * 所以先写入关键词，再唤起搜索框即可直接看到该 tag 的搜索结果。
+ */
+function searchByTag(tag: string) {
+  sessionStorage.setItem("vitepress:local-search-filter", tag);
+
+  // 复用导航栏上的搜索按钮打开搜索框，打开动作交给 VitePress 自己处理
+  const searchButton = document.querySelector<HTMLElement>(
+    "#local-search button",
+  );
+  if (searchButton) {
+    searchButton.click();
+    return;
+  }
+
+  // 兜底：布局里没有搜索按钮时，派发 VitePress 自己的 Ctrl/Cmd + K 快捷键
+  window.dispatchEvent(
+    new KeyboardEvent("keydown", { key: "k", ctrlKey: true, bubbles: true }),
+  );
 }
 
 if (typeof window !== "undefined") {
