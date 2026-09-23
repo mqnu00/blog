@@ -1,6 +1,5 @@
 ---
 url: 'https://mqnu00.github.io/blog/posts/index.html'
-date: '2026-05-13 15:39'
 discussion:
   id: D_kwDOQdT3Qc4Alc3q
   number: 58

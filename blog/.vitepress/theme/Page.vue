@@ -6,7 +6,7 @@
       <div style="margin-bottom: 30px">
         <NH1>{{ frontmatter.title }}</NH1>
         <div style="display: flex; flex-direction: column">
-          <NP>更新时间： {{ frontmatter.date }}</NP>
+          <NP v-if="frontmatter.date">更新时间： {{ frontmatter.date }}</NP>
           <!-- <span>标签：</span> -->
           <div
             v-if="frontmatter.tags"
