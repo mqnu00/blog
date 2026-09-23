@@ -4,7 +4,7 @@
         <title>广习习的博客</title>
         <link>https://mqnu00.github.io/blog/</link>
         <description>分享技术与生活的个人博客</description>
-        <lastBuildDate>Fri, 11 Sep 2026 07:04:05 GMT</lastBuildDate>
+        <lastBuildDate>Wed, 23 Sep 2026 01:55:12 GMT</lastBuildDate>
         <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
         <generator>https://github.com/jpmonette/feed</generator>
         <language>en-US</language>
@@ -13,7 +13,7 @@
             <url>https://mqnu00.github.io/blog/favicon.ico</url>
             <link>https://mqnu00.github.io/blog/</link>
         </image>
-        <copyright>© 2025 广习习</copyright>
+        <copyright>© 2026 广习习</copyright>
         <item>
             <title><![CDATA[ai-coding:文档转换试卷系统]]></title>
             <link>https://mqnu00.github.io/blog//posts/ai/exam-generator.html</link>
@@ -439,7 +439,7 @@
         ]
       },
       {
-        "text": "vitepress示例",
+        "text": "vitepress 博客搭建记录",
         "collapsed": true,
         "items": [
           {
@@ -493,7 +493,7 @@
   ],
   "footer": {
     "message": "Released under the MIT License.",
-    "copyright": "Copyright © 2025-present 广习习"
+    "copyright": "Copyright © 2025-2026 广习习"
   },
   "docFooter": {
     "prev": false,
