@@ -4,7 +4,7 @@
         <title>广习习的博客</title>
         <link>https://mqnu00.github.io/blog/</link>
         <description>分享技术与生活的个人博客</description>
-        <lastBuildDate>Wed, 23 Sep 2026 02:28:55 GMT</lastBuildDate>
+        <lastBuildDate>Wed, 30 Sep 2026 07:56:59 GMT</lastBuildDate>
         <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
         <generator>https://github.com/jpmonette/feed</generator>
         <language>en-US</language>
@@ -16,347 +16,347 @@
         <copyright>© 2026 广习习</copyright>
         <item>
             <title><![CDATA[ai-coding:文档转换试卷系统]]></title>
-            <link>https://mqnu00.github.io/blog//posts/ai/exam-generator.html</link>
-            <guid isPermaLink="false">https://mqnu00.github.io/blog//posts/ai/exam-generator.html</guid>
+            <link>https://mqnu00.github.io/blog/posts/ai/exam-generator.html</link>
+            <guid isPermaLink="false">https://mqnu00.github.io/blog/posts/ai/exam-generator.html</guid>
             <pubDate>Wed, 05 Aug 2026 06:33:00 GMT</pubDate>
-            <content:encoded><![CDATA[<div><h1 id="背景" tabindex="-1">背景 <a class="header-anchor" href="#背景" aria-label="Permalink to &quot;背景&quot;">​</a></h1><p>最近有考试，给了考试的题目，存在word文档里，要练习。</p><p>但是直接看文档，没有写题的感觉。</p><p>想着说能不能写一个word转json，提取出所有考题，然后加上一个在线的考试系统。</p><p>考试系统还是很简单的，难点在word转json方面，word内容，考卷题目的格式不一定，只能通过AI读取转换，就是在这里遇到了难点。</p><h1 id="解决方法" tabindex="-1">解决方法 <a class="header-anchor" href="#解决方法" aria-label="Permalink to &quot;解决方法&quot;">​</a></h1><h2 id="提示词-整个文档转换" tabindex="-1">提示词 + 整个文档转换 <a class="header-anchor" href="#提示词-整个文档转换" aria-label="Permalink to &quot;提示词 + 整个文档转换&quot;">​</a></h2><p>整个文档直接上传，大概有34万token。</p><p>提示词如下：</p><div class="language- vp-adaptive-theme"><span class="lang"></span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>你是一个专业的考试题目提取助手。请从提供的文本中提取所有考试题目，严格返回JSON数组格式。</span></span>
-<span class="line"><span></span></span>
-<span class="line"><span>对于每道题目，识别题型并返回以下结构：</span></span>
-<span class="line"><span>{</span></span>
-<span class="line"><span>  "type": "题目类型: single_choice(单选题) | multiple_choice(多选题) | true_false(判断题) | fill_blank(填空题) | short_answer(简答题)",</span></span>
-<span class="line"><span>  "content": "题目内容",</span></span>
-<span class="line"><span>  "options": ["选项A", "选项B", ...],</span></span>
-<span class="line"><span>  "answer": "正确答案",</span></span>
-<span class="line"><span>  "difficulty": "难度: easy | medium | hard",</span></span>
-<span class="line"><span>  "tags": ["相关标签"]</span></span>
-<span class="line"><span>}</span></span>
-<span class="line"><span></span></span>
-<span class="line"><span>规则：</span></span>
-<span class="line"><span>1. 只返回JSON数组，不要包含任何其他文字或markdown标记</span></span>
-<span class="line"><span>2. 单选题answer为单个选项字母如"A"，多选题answer为字母数组如["A","C"]</span></span>
-<span class="line"><span>3. 判断题answer为"对"或"错"</span></span>
-<span class="line"><span>4. 如果文本中没有题目，返回空数组[]`,</span></span></code></pre></div><p>效果不太好，我一开始大概是截取了 3000tokens 的试题做了测试，运行没有问题，返回的json也正常。</p><p>但是直接把整个文档发送过去，就出现了几个缺点：</p><ol><li>运行速度慢，需要等待很久，调试困难</li><li>提示词被弱化</li><li>直接返回文字/返回过长被截断导致json识别错误</li></ol><h2 id="提示词-tools" tabindex="-1">提示词 + tools <a class="header-anchor" href="#提示词-tools" aria-label="Permalink to &quot;提示词 + tools&quot;">​</a></h2><p>使用分批(2000~3000tokens一批) 提取，分批返回识别结果。</p><p>这里可能有疑问万一把题目切成两半？可以注意到这个分批不是程序切分后分批，而是靠模型调用tool切分读取自己想读的地方。</p><p>这个方法就好很多了，用户可以看到多轮对话的进度（看到第几轮对话），等待就不会太焦虑，提取结果是每批返回的也能看到进度。</p><h3 id="提示词" tabindex="-1">提示词 <a class="header-anchor" href="#提示词" aria-label="Permalink to &quot;提示词&quot;">​</a></h3><div class="language-js vp-adaptive-theme"><span class="lang">js</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>const</span><span> systemPrompt</span><span> =</span><span> `你是一个专业的考试题目提取助手。你需要从文档中提取所有考试题目。</span></span>
-<span class="line"></span>
-<span class="line"><span>文档总长度：${</span><span>documentText</span><span>.</span><span>length</span><span>} 字符。</span></span>
-<span class="line"></span>
-<span class="line"><span>使用 read_file 工具分段读取文档（每次建议读 2000-3000 字符），边读边识别题目。</span></span>
-<span class="line"><span>识别出题目后，立即使用 task_finish 提交（可分批，每批不超过20道）。</span></span>
-<span class="line"><span>全部处理完毕后，最后一批设置 done: true。</span></span>
-<span class="line"></span>
-<span class="line"><span>题目格式要求：</span></span>
-<span class="line"><span>- type: single_choice / multiple_choice / true_false / fill_blank / short_answer</span></span>
-<span class="line"><span>- content: 纯题干，不含选项</span></span>
-<span class="line"><span>- options: 选项数组，非选择题为空数组 []</span></span>
-<span class="line"><span>- answer: 单选为"A"，多选为["A","C"]（JSON数组字符串），判断为"对"/"错"</span></span>
-<span class="line"><span>- difficulty: easy / medium / hard</span></span>
-<span class="line"><span>- tags: 相关标签数组</span></span>
-<span class="line"></span>
-<span class="line"><span>重要：</span></span>
-<span class="line"><span>- 仔细阅读每一段文档，不要遗漏任何题目</span></span>
-<span class="line"><span>- 保持题目原文的准确性</span></span>
-<span class="line"><span>- 如果文档中没有题目，立即 task_finish 提交空数组，done: true`</span></span></code></pre></div><h3 id="tools" tabindex="-1">tools <a class="header-anchor" href="#tools" aria-label="Permalink to &quot;tools&quot;">​</a></h3><p>下面定义了两个tool，考试系统运行的时候，前端解析完上传的文件，触发模型API，当模型返回调用tools的命令，前端就会去执行对应的函数</p><div class="language-js vp-adaptive-theme"><span class="lang">js</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>const</span><span> TOOLS</span><span> =</span><span> [</span></span>
-<span class="line"><span>  {</span></span>
-<span class="line"><span>    type: </span><span>'function'</span><span> as</span><span> const</span><span>,</span></span>
-<span class="line"><span>    function: {</span></span>
-<span class="line"><span>      name: </span><span>'read_file'</span><span>,</span></span>
-<span class="line"><span>      description:</span></span>
-<span class="line"><span>        '读取待解析文档的指定区间。start 从 0 开始（含），limit 为读取的字符数。每次不要读取超过 3000 字符。'</span><span>,</span></span>
-<span class="line"><span>      parameters: {</span></span>
-<span class="line"><span>        type: </span><span>'object'</span><span> as</span><span> const</span><span>,</span></span>
-<span class="line"><span>        properties: {</span></span>
-<span class="line"><span>          start: { type: </span><span>'integer'</span><span> as</span><span> const</span><span>, description: </span><span>'起始字符位置（从0开始）'</span><span> },</span></span>
-<span class="line"><span>          limit: { type: </span><span>'integer'</span><span> as</span><span> const</span><span>, description: </span><span>'读取的字符数，建议不超过3000'</span><span> },</span></span>
-<span class="line"><span>        },</span></span>
-<span class="line"><span>        required: [</span><span>'start'</span><span>, </span><span>'limit'</span><span>],</span></span>
-<span class="line"><span>      },</span></span>
-<span class="line"><span>    },</span></span>
-<span class="line"><span>  },</span></span>
-<span class="line"><span>  {</span></span>
-<span class="line"><span>    type: </span><span>'function'</span><span> as</span><span> const</span><span>,</span></span>
-<span class="line"><span>    function: {</span></span>
-<span class="line"><span>      name: </span><span>'task_finish'</span><span>,</span></span>
-<span class="line"><span>      description:</span></span>
-<span class="line"><span>        '提交提取到的题目。如果题目较多可分批提交，每批不超过20道。最后一批请设置 done: true。文档中没有题目时，提交空数组并设置 done: true。'</span><span>,</span></span>
-<span class="line"><span>      parameters: {</span></span>
-<span class="line"><span>        type: </span><span>'object'</span><span> as</span><span> const</span><span>,</span></span>
-<span class="line"><span>        properties: {</span></span>
-<span class="line"><span>          questions: {},    </span><span>// 题目类型</span></span>
-<span class="line"><span>          done: { type: </span><span>'boolean'</span><span> as</span><span> const</span><span>, description: </span><span>'是否为最后一批（true=任务完成）'</span><span> },</span></span>
-<span class="line"><span>        },</span></span>
-<span class="line"><span>        required: [</span><span>'questions'</span><span>, </span><span>'done'</span><span>],</span></span>
-<span class="line"><span>      },</span></span>
-<span class="line"><span>    },</span></span>
-<span class="line"><span>  },</span></span>
-<span class="line"><span>]</span></span></code></pre></div><h1 id="总结" tabindex="-1">总结 <a class="header-anchor" href="#总结" aria-label="Permalink to &quot;总结&quot;">​</a></h1><p>整体的优化方法就是提供给模型一个窗口，让模型自由的扫描这个文档。</p><p>但必须承认这个方法很依赖模型的能力，如果模型检测不出来题目被切断，不会自动扩大缩小扫描窗口，这个方法也是捉瞎。</p></div>]]></content:encoded>
+            <content:encoded><![CDATA[<div><h1 id="背景">背景 </h1><p>最近有考试，给了考试的题目，存在word文档里，要练习。</p><p>但是直接看文档，没有写题的感觉。</p><p>想着说能不能写一个word转json，提取出所有考题，然后加上一个在线的考试系统。</p><p>考试系统还是很简单的，难点在word转json方面，word内容，考卷题目的格式不一定，只能通过AI读取转换，就是在这里遇到了难点。</p><h1 id="解决方法">解决方法 </h1><h2 id="提示词-整个文档转换">提示词 + 整个文档转换 </h2><p>整个文档直接上传，大概有34万token。</p><p>提示词如下：</p><div><span style="color:#6a737d;font-size:12px"></span><pre style="background-color:#f6f8fa;border-radius:6px;padding:12px 16px;overflow-x:auto;font-size:13px;line-height:1.6"><code><span><span>你是一个专业的考试题目提取助手。请从提供的文本中提取所有考试题目，严格返回JSON数组格式。</span></span>
+<span><span></span></span>
+<span><span>对于每道题目，识别题型并返回以下结构：</span></span>
+<span><span>{</span></span>
+<span><span>  "type": "题目类型: single_choice(单选题) | multiple_choice(多选题) | true_false(判断题) | fill_blank(填空题) | short_answer(简答题)",</span></span>
+<span><span>  "content": "题目内容",</span></span>
+<span><span>  "options": ["选项A", "选项B", ...],</span></span>
+<span><span>  "answer": "正确答案",</span></span>
+<span><span>  "difficulty": "难度: easy | medium | hard",</span></span>
+<span><span>  "tags": ["相关标签"]</span></span>
+<span><span>}</span></span>
+<span><span></span></span>
+<span><span>规则：</span></span>
+<span><span>1. 只返回JSON数组，不要包含任何其他文字或markdown标记</span></span>
+<span><span>2. 单选题answer为单个选项字母如"A"，多选题answer为字母数组如["A","C"]</span></span>
+<span><span>3. 判断题answer为"对"或"错"</span></span>
+<span><span>4. 如果文本中没有题目，返回空数组[]`,</span></span></code></pre></div><p>效果不太好，我一开始大概是截取了 3000tokens 的试题做了测试，运行没有问题，返回的json也正常。</p><p>但是直接把整个文档发送过去，就出现了几个缺点：</p><ol><li>运行速度慢，需要等待很久，调试困难</li><li>提示词被弱化</li><li>直接返回文字/返回过长被截断导致json识别错误</li></ol><h2 id="提示词-tools">提示词 + tools </h2><p>使用分批(2000~3000tokens一批) 提取，分批返回识别结果。</p><p>这里可能有疑问万一把题目切成两半？可以注意到这个分批不是程序切分后分批，而是靠模型调用tool切分读取自己想读的地方。</p><p>这个方法就好很多了，用户可以看到多轮对话的进度（看到第几轮对话），等待就不会太焦虑，提取结果是每批返回的也能看到进度。</p><h3 id="提示词">提示词 </h3><div><span style="color:#6a737d;font-size:12px">js</span><pre style="background-color:#f6f8fa;border-radius:6px;padding:12px 16px;overflow-x:auto;font-size:13px;line-height:1.6"><code><span><span style="color:#D73A49">const</span><span style="color:#005CC5"> systemPrompt</span><span style="color:#D73A49"> =</span><span style="color:#032F62"> `你是一个专业的考试题目提取助手。你需要从文档中提取所有考试题目。</span></span>
+<span></span>
+<span><span style="color:#032F62">文档总长度：${</span><span style="color:#24292E">documentText</span><span style="color:#032F62">.</span><span style="color:#005CC5">length</span><span style="color:#032F62">} 字符。</span></span>
+<span></span>
+<span><span style="color:#032F62">使用 read_file 工具分段读取文档（每次建议读 2000-3000 字符），边读边识别题目。</span></span>
+<span><span style="color:#032F62">识别出题目后，立即使用 task_finish 提交（可分批，每批不超过20道）。</span></span>
+<span><span style="color:#032F62">全部处理完毕后，最后一批设置 done: true。</span></span>
+<span></span>
+<span><span style="color:#032F62">题目格式要求：</span></span>
+<span><span style="color:#032F62">- type: single_choice / multiple_choice / true_false / fill_blank / short_answer</span></span>
+<span><span style="color:#032F62">- content: 纯题干，不含选项</span></span>
+<span><span style="color:#032F62">- options: 选项数组，非选择题为空数组 []</span></span>
+<span><span style="color:#032F62">- answer: 单选为"A"，多选为["A","C"]（JSON数组字符串），判断为"对"/"错"</span></span>
+<span><span style="color:#032F62">- difficulty: easy / medium / hard</span></span>
+<span><span style="color:#032F62">- tags: 相关标签数组</span></span>
+<span></span>
+<span><span style="color:#032F62">重要：</span></span>
+<span><span style="color:#032F62">- 仔细阅读每一段文档，不要遗漏任何题目</span></span>
+<span><span style="color:#032F62">- 保持题目原文的准确性</span></span>
+<span><span style="color:#032F62">- 如果文档中没有题目，立即 task_finish 提交空数组，done: true`</span></span></code></pre></div><h3 id="tools">tools </h3><p>下面定义了两个tool，考试系统运行的时候，前端解析完上传的文件，触发模型API，当模型返回调用tools的命令，前端就会去执行对应的函数</p><div><span style="color:#6a737d;font-size:12px">js</span><pre style="background-color:#f6f8fa;border-radius:6px;padding:12px 16px;overflow-x:auto;font-size:13px;line-height:1.6"><code><span><span style="color:#D73A49">const</span><span style="color:#005CC5"> TOOLS</span><span style="color:#D73A49"> =</span><span style="color:#24292E"> [</span></span>
+<span><span style="color:#24292E">  {</span></span>
+<span><span style="color:#24292E">    type: </span><span style="color:#032F62">'function'</span><span style="color:#D73A49"> as</span><span style="color:#D73A49"> const</span><span style="color:#24292E">,</span></span>
+<span><span style="color:#24292E">    function: {</span></span>
+<span><span style="color:#24292E">      name: </span><span style="color:#032F62">'read_file'</span><span style="color:#24292E">,</span></span>
+<span><span style="color:#24292E">      description:</span></span>
+<span><span style="color:#032F62">        '读取待解析文档的指定区间。start 从 0 开始（含），limit 为读取的字符数。每次不要读取超过 3000 字符。'</span><span style="color:#24292E">,</span></span>
+<span><span style="color:#24292E">      parameters: {</span></span>
+<span><span style="color:#24292E">        type: </span><span style="color:#032F62">'object'</span><span style="color:#D73A49"> as</span><span style="color:#D73A49"> const</span><span style="color:#24292E">,</span></span>
+<span><span style="color:#24292E">        properties: {</span></span>
+<span><span style="color:#24292E">          start: { type: </span><span style="color:#032F62">'integer'</span><span style="color:#D73A49"> as</span><span style="color:#D73A49"> const</span><span style="color:#24292E">, description: </span><span style="color:#032F62">'起始字符位置（从0开始）'</span><span style="color:#24292E"> },</span></span>
+<span><span style="color:#24292E">          limit: { type: </span><span style="color:#032F62">'integer'</span><span style="color:#D73A49"> as</span><span style="color:#D73A49"> const</span><span style="color:#24292E">, description: </span><span style="color:#032F62">'读取的字符数，建议不超过3000'</span><span style="color:#24292E"> },</span></span>
+<span><span style="color:#24292E">        },</span></span>
+<span><span style="color:#24292E">        required: [</span><span style="color:#032F62">'start'</span><span style="color:#24292E">, </span><span style="color:#032F62">'limit'</span><span style="color:#24292E">],</span></span>
+<span><span style="color:#24292E">      },</span></span>
+<span><span style="color:#24292E">    },</span></span>
+<span><span style="color:#24292E">  },</span></span>
+<span><span style="color:#24292E">  {</span></span>
+<span><span style="color:#24292E">    type: </span><span style="color:#032F62">'function'</span><span style="color:#D73A49"> as</span><span style="color:#D73A49"> const</span><span style="color:#24292E">,</span></span>
+<span><span style="color:#24292E">    function: {</span></span>
+<span><span style="color:#24292E">      name: </span><span style="color:#032F62">'task_finish'</span><span style="color:#24292E">,</span></span>
+<span><span style="color:#24292E">      description:</span></span>
+<span><span style="color:#032F62">        '提交提取到的题目。如果题目较多可分批提交，每批不超过20道。最后一批请设置 done: true。文档中没有题目时，提交空数组并设置 done: true。'</span><span style="color:#24292E">,</span></span>
+<span><span style="color:#24292E">      parameters: {</span></span>
+<span><span style="color:#24292E">        type: </span><span style="color:#032F62">'object'</span><span style="color:#D73A49"> as</span><span style="color:#D73A49"> const</span><span style="color:#24292E">,</span></span>
+<span><span style="color:#24292E">        properties: {</span></span>
+<span><span style="color:#24292E">          questions: {},    </span><span style="color:#6A737D">// 题目类型</span></span>
+<span><span style="color:#24292E">          done: { type: </span><span style="color:#032F62">'boolean'</span><span style="color:#D73A49"> as</span><span style="color:#D73A49"> const</span><span style="color:#24292E">, description: </span><span style="color:#032F62">'是否为最后一批（true=任务完成）'</span><span style="color:#24292E"> },</span></span>
+<span><span style="color:#24292E">        },</span></span>
+<span><span style="color:#24292E">        required: [</span><span style="color:#032F62">'questions'</span><span style="color:#24292E">, </span><span style="color:#032F62">'done'</span><span style="color:#24292E">],</span></span>
+<span><span style="color:#24292E">      },</span></span>
+<span><span style="color:#24292E">    },</span></span>
+<span><span style="color:#24292E">  },</span></span>
+<span><span style="color:#24292E">]</span></span></code></pre></div><h1 id="总结">总结 </h1><p>整体的优化方法就是提供给模型一个窗口，让模型自由的扫描这个文档。</p><p>但必须承认这个方法很依赖模型的能力，如果模型检测不出来题目被切断，不会自动扩大缩小扫描窗口，这个方法也是捉瞎。</p></div>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[在win11开发兼容ie的网页]]></title>
-            <link>https://mqnu00.github.io/blog//posts/frontend/develop-ie-win11/develop-ie-win11.html</link>
-            <guid isPermaLink="false">https://mqnu00.github.io/blog//posts/frontend/develop-ie-win11/develop-ie-win11.html</guid>
+            <link>https://mqnu00.github.io/blog/posts/frontend/develop-ie-win11/develop-ie-win11.html</link>
+            <guid isPermaLink="false">https://mqnu00.github.io/blog/posts/frontend/develop-ie-win11/develop-ie-win11.html</guid>
             <pubDate>Thu, 27 Nov 2025 03:29:00 GMT</pubDate>
-            <content:encoded><![CDATA[<div><h1 id="目标是什么" tabindex="-1">目标是什么 <a class="header-anchor" href="#目标是什么" aria-label="Permalink to &quot;目标是什么&quot;">​</a></h1><p>这里指的是语法的兼容，目标版本是ie8。我平时语法用到的比如</p><ul><li><code>Arrow functions () =&gt; {}</code></li><li><code>Optional chaining operator (?.)</code></li></ul><p><!----></p><p>可以在 <a href="https://caniuse.com/?search=%3F." target="_blank" rel="noreferrer">语法搜索</a> 查看语法兼容情况</p><h1 id="开发环境搭建" tabindex="-1">开发环境搭建 <a class="header-anchor" href="#开发环境搭建" aria-label="Permalink to &quot;开发环境搭建&quot;">​</a></h1><p>在 win11 系统，目前来说最简单的方法是使用 <code>edge</code> 的 <code>ie兼容模式</code> ，缺点是不确定使用的是什么版本的。</p><p>有一个方法可以调出ie的原生软件页面。可以参考 <a href="https://www.jianshu.com/p/b9e129ec349b" target="_blank" rel="noreferrer">Win11 打开 IE 浏览器 - 简书</a></p><p>总结一下：</p><ul><li>在 edge 允许启用 ie兼容模式</li><li>创建 vbs 脚本 <code>CreateObject("InternetExplorer.Application").Visible=true</code></li><li>打开 ie 浏览器 F12，选择 ie8 仿真模式</li></ul><p><!----></p><h2 id="ie浏览器问题" tabindex="-1">IE浏览器问题 <a class="header-anchor" href="#ie浏览器问题" aria-label="Permalink to &quot;IE浏览器问题&quot;">​</a></h2><ol><li><a href="https://learn.microsoft.com/zh-cn/answers/questions/5560234/win11-ie" target="_blank" rel="noreferrer">升级win11后,IE调试工具-网络-网络集合代理无法启动</a>，<a href="https://juejin.cn/post/7447807675273347082" target="_blank" rel="noreferrer">win11 24H2删除了老的依赖，参考链接评论</a></li></ol></div>]]></content:encoded>
+            <content:encoded><![CDATA[<div><h1 id="目标是什么">目标是什么 </h1><p>这里指的是语法的兼容，目标版本是ie8。我平时语法用到的比如</p><ul><li><code>Arrow functions () =&gt; {}</code></li><li><code>Optional chaining operator (?.)</code></li></ul><p><img src="https://mqnu00.github.io/blog/assets/browser-surport.BkOJwp9y.png" alt=""><!----></p><p>可以在 <a href="https://caniuse.com/?search=%3F." target="_blank" rel="noreferrer">语法搜索</a> 查看语法兼容情况</p><h1 id="开发环境搭建">开发环境搭建 </h1><p>在 win11 系统，目前来说最简单的方法是使用 <code>edge</code> 的 <code>ie兼容模式</code> ，缺点是不确定使用的是什么版本的。</p><p>有一个方法可以调出ie的原生软件页面。可以参考 <a href="https://www.jianshu.com/p/b9e129ec349b" target="_blank" rel="noreferrer">Win11 打开 IE 浏览器 - 简书</a></p><p>总结一下：</p><ul><li>在 edge 允许启用 ie兼容模式</li><li>创建 vbs 脚本 <code>CreateObject("InternetExplorer.Application").Visible=true</code></li><li>打开 ie 浏览器 F12，选择 ie8 仿真模式</li></ul><p><img src="https://mqnu00.github.io/blog/assets/ie.ClQA5gU0.png" alt="ie浏览器 仿真模式设置"><!----></p><h2 id="ie浏览器问题">IE浏览器问题 </h2><ol><li><a href="https://learn.microsoft.com/zh-cn/answers/questions/5560234/win11-ie" target="_blank" rel="noreferrer">升级win11后,IE调试工具-网络-网络集合代理无法启动</a>，<a href="https://juejin.cn/post/7447807675273347082" target="_blank" rel="noreferrer">win11 24H2删除了老的依赖，参考链接评论</a></li></ol></div>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[最近开发时遇到的问题(var和async)]]></title>
-            <link>https://mqnu00.github.io/blog//posts/frontend/problem-for-var-and-async/problem-for-var-and-async.html</link>
-            <guid isPermaLink="false">https://mqnu00.github.io/blog//posts/frontend/problem-for-var-and-async/problem-for-var-and-async.html</guid>
+            <link>https://mqnu00.github.io/blog/posts/frontend/problem-for-var-and-async/problem-for-var-and-async.html</link>
+            <guid isPermaLink="false">https://mqnu00.github.io/blog/posts/frontend/problem-for-var-and-async/problem-for-var-and-async.html</guid>
             <pubDate>Fri, 26 Dec 2025 09:16:00 GMT</pubDate>
-            <content:encoded><![CDATA[<div><h1 id="环境" tabindex="-1">环境 <a class="header-anchor" href="#环境" aria-label="Permalink to &quot;环境&quot;">​</a></h1><p>注意环境是ie8，常用的现代浏览器的语法是没有的，比如：</p><ul><li>let，const(<a href="https://www.w3schools.com/JS/js_let.asp?utm_source=copilot.com" target="_blank" rel="noreferrer">es6开始支持</a>)。只能使用 <code>var</code></li><li><a href="https://www.w3schools.com/Js/js_es6.asp" target="_blank" rel="noreferrer">promise</a>，<a href="https://www.w3schools.com/Js/js_2017.asp" target="_blank" rel="noreferrer">async/await</a>。转而使用<code>function callback</code></li></ul><h1 id="var存在的问题" tabindex="-1">var存在的问题 <a class="header-anchor" href="#var存在的问题" aria-label="Permalink to &quot;var存在的问题&quot;">​</a></h1><div class="language-js vp-adaptive-theme"><span class="lang">js</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>// 正常写法</span></span>
-<span class="line"><span>for</span><span> (</span><span>var</span><span> i </span><span>=</span><span> 0</span><span>; i </span><span>&lt;</span><span> 3</span><span>; i</span><span>++</span><span>) {</span></span>
-<span class="line"><span>  setTimeout</span><span>(() </span><span>=&gt;</span><span> console.</span><span>log</span><span>(</span><span>"var i ="</span><span>, i), </span><span>0</span><span>);</span></span>
-<span class="line"><span>}</span></span></code></pre></div><p>但是循环内定义的函数不是马上执行的，当这个函数被调用时，<code>i</code> 已经等于 <code>imgList.length</code> 了。 使用 <code>let</code> 就不会出现这个问题。 根本原因是作用域的问题，<code>var</code>会自动提到全局变量，可以尝试在for循环结束后打印<code>i</code></p><div class="language-js vp-adaptive-theme"><span class="lang">js</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>for</span><span> (</span><span>var</span><span> i </span><span>=</span><span> 0</span><span>; i </span><span>&lt;</span><span> 3</span><span>; i</span><span>++</span><span>) {</span></span>
-<span class="line"><span>  setTimeout</span><span>(() </span><span>=&gt;</span><span> console.</span><span>log</span><span>(</span><span>"var i ="</span><span>, i), </span><span>0</span><span>);</span></span>
-<span class="line"><span>}</span></span>
-<span class="line"><span>console.</span><span>log</span><span>(i);</span></span></code></pre></div><p>目前是使用IIFE，创建新的函数作用域，冻结变量。</p><div class="language-js vp-adaptive-theme"><span class="lang">js</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>// IIFE写法</span></span>
-<span class="line"><span>for</span><span> (</span><span>var</span><span> i </span><span>=</span><span> 0</span><span>; i </span><span>&lt;</span><span> 3</span><span>; i</span><span>++</span><span>) {</span></span>
-<span class="line"><span>  (</span><span>function</span><span>(</span><span>iCopy</span><span>) {</span></span>
-<span class="line"><span>    setTimeout</span><span>(() </span><span>=&gt;</span><span> console.</span><span>log</span><span>(</span><span>"IIFE i ="</span><span>, iCopy), </span><span>0</span><span>);</span></span>
-<span class="line"><span>  })(i);</span></span>
-<span class="line"><span>}</span></span></code></pre></div><h1 id="异步问题" tabindex="-1">异步问题 <a class="header-anchor" href="#异步问题" aria-label="Permalink to &quot;异步问题&quot;">​</a></h1><p>无法使用 promise，async/await，如何保证网络请求后，我将结果赋值给变量，另一个地方用到这个变量是在请求后呢？ 可以使用callback。</p><div class="language-js vp-adaptive-theme"><span class="lang">js</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>function</span><span> ajaxGET</span><span>(</span><span>url</span><span>, </span><span>params</span><span>, </span><span>callback</span><span>) {</span></span>
-<span class="line"><span>    $.</span><span>ajax</span><span>({</span></span>
-<span class="line"><span>        url: url,</span></span>
-<span class="line"><span>        type: </span><span>"GET"</span><span>,</span></span>
-<span class="line"><span>        data: params,</span></span>
-<span class="line"><span>        dataType: </span><span>"json"</span><span>,</span></span>
-<span class="line"><span>        success</span><span>: </span><span>function</span><span> (</span><span>res</span><span>) {</span></span>
-<span class="line"><span>            callback</span><span>(res);</span></span>
-<span class="line"><span>        },</span></span>
-<span class="line"><span>        error</span><span>: </span><span>function</span><span> (</span><span>err</span><span>) {</span></span>
-<span class="line"><span>            console.</span><span>error</span><span>(</span><span>"GET 请求失败:"</span><span>, err);</span></span>
-<span class="line"><span>        }</span></span>
-<span class="line"><span>    });</span></span>
-<span class="line"><span>}</span></span></code></pre></div><p>问题在于希望一个请求的结果，解析处理后作为另一个请求的参数，就有先后顺序，导致出现了复杂的嵌套，即回调地狱。 还是有点头疼的。</p><div class="language-js vp-adaptive-theme"><span class="lang">js</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>ajaxGET</span><span>(url1, params1, </span><span>function</span><span> (</span><span>res1</span><span>) {</span></span>
-<span class="line"><span>    var</span><span> params2 </span><span>=</span><span> solve1</span><span>(res1);</span></span>
-<span class="line"><span>    ajaxGET</span><span>(url2, params2, </span><span>function</span><span> (</span><span>res2</span><span>) {</span></span>
-<span class="line"><span>        // ......</span></span>
-<span class="line"><span>    })</span></span>
-<span class="line"><span>})</span></span></code></pre></div><h1 id="总结" tabindex="-1">总结 <a class="header-anchor" href="#总结" aria-label="Permalink to &quot;总结&quot;">​</a></h1><p>语法不习惯是一方面，保证ie8和现代浏览器网页的显示行为一致又是一个难点。</p><p>最近看了一圈jquery和extjs，没看到查看大图的组件。</p><p>尝试写个demo，就发现事件监听、图像DOM的属性等等的，ie8和现代浏览器不一致的问题。</p></div>]]></content:encoded>
+            <content:encoded><![CDATA[<div><h1 id="环境">环境 </h1><p>注意环境是ie8，常用的现代浏览器的语法是没有的，比如：</p><ul><li>let，const(<a href="https://www.w3schools.com/JS/js_let.asp?utm_source=copilot.com" target="_blank" rel="noreferrer">es6开始支持</a>)。只能使用 <code>var</code></li><li><a href="https://www.w3schools.com/Js/js_es6.asp" target="_blank" rel="noreferrer">promise</a>，<a href="https://www.w3schools.com/Js/js_2017.asp" target="_blank" rel="noreferrer">async/await</a>。转而使用<code>function callback</code></li></ul><h1 id="var存在的问题">var存在的问题 </h1><div><span style="color:#6a737d;font-size:12px">js</span><pre style="background-color:#f6f8fa;border-radius:6px;padding:12px 16px;overflow-x:auto;font-size:13px;line-height:1.6"><code><span><span style="color:#6A737D">// 正常写法</span></span>
+<span><span style="color:#D73A49">for</span><span style="color:#24292E"> (</span><span style="color:#D73A49">var</span><span style="color:#24292E"> i </span><span style="color:#D73A49">=</span><span style="color:#005CC5"> 0</span><span style="color:#24292E">; i </span><span style="color:#D73A49">&lt;</span><span style="color:#005CC5"> 3</span><span style="color:#24292E">; i</span><span style="color:#D73A49">++</span><span style="color:#24292E">) {</span></span>
+<span><span style="color:#6F42C1">  setTimeout</span><span style="color:#24292E">(() </span><span style="color:#D73A49">=&gt;</span><span style="color:#24292E"> console.</span><span style="color:#6F42C1">log</span><span style="color:#24292E">(</span><span style="color:#032F62">"var i ="</span><span style="color:#24292E">, i), </span><span style="color:#005CC5">0</span><span style="color:#24292E">);</span></span>
+<span><span style="color:#24292E">}</span></span></code></pre></div><p>但是循环内定义的函数不是马上执行的，当这个函数被调用时，<code>i</code> 已经等于 <code>imgList.length</code> 了。 使用 <code>let</code> 就不会出现这个问题。 根本原因是作用域的问题，<code>var</code>会自动提到全局变量，可以尝试在for循环结束后打印<code>i</code></p><div><span style="color:#6a737d;font-size:12px">js</span><pre style="background-color:#f6f8fa;border-radius:6px;padding:12px 16px;overflow-x:auto;font-size:13px;line-height:1.6"><code><span><span style="color:#D73A49">for</span><span style="color:#24292E"> (</span><span style="color:#D73A49">var</span><span style="color:#24292E"> i </span><span style="color:#D73A49">=</span><span style="color:#005CC5"> 0</span><span style="color:#24292E">; i </span><span style="color:#D73A49">&lt;</span><span style="color:#005CC5"> 3</span><span style="color:#24292E">; i</span><span style="color:#D73A49">++</span><span style="color:#24292E">) {</span></span>
+<span><span style="color:#6F42C1">  setTimeout</span><span style="color:#24292E">(() </span><span style="color:#D73A49">=&gt;</span><span style="color:#24292E"> console.</span><span style="color:#6F42C1">log</span><span style="color:#24292E">(</span><span style="color:#032F62">"var i ="</span><span style="color:#24292E">, i), </span><span style="color:#005CC5">0</span><span style="color:#24292E">);</span></span>
+<span><span style="color:#24292E">}</span></span>
+<span><span style="color:#24292E">console.</span><span style="color:#6F42C1">log</span><span style="color:#24292E">(i);</span></span></code></pre></div><p>目前是使用IIFE，创建新的函数作用域，冻结变量。</p><div><span style="color:#6a737d;font-size:12px">js</span><pre style="background-color:#f6f8fa;border-radius:6px;padding:12px 16px;overflow-x:auto;font-size:13px;line-height:1.6"><code><span><span style="color:#6A737D">// IIFE写法</span></span>
+<span><span style="color:#D73A49">for</span><span style="color:#24292E"> (</span><span style="color:#D73A49">var</span><span style="color:#24292E"> i </span><span style="color:#D73A49">=</span><span style="color:#005CC5"> 0</span><span style="color:#24292E">; i </span><span style="color:#D73A49">&lt;</span><span style="color:#005CC5"> 3</span><span style="color:#24292E">; i</span><span style="color:#D73A49">++</span><span style="color:#24292E">) {</span></span>
+<span><span style="color:#24292E">  (</span><span style="color:#D73A49">function</span><span style="color:#24292E">(</span><span style="color:#E36209">iCopy</span><span style="color:#24292E">) {</span></span>
+<span><span style="color:#6F42C1">    setTimeout</span><span style="color:#24292E">(() </span><span style="color:#D73A49">=&gt;</span><span style="color:#24292E"> console.</span><span style="color:#6F42C1">log</span><span style="color:#24292E">(</span><span style="color:#032F62">"IIFE i ="</span><span style="color:#24292E">, iCopy), </span><span style="color:#005CC5">0</span><span style="color:#24292E">);</span></span>
+<span><span style="color:#24292E">  })(i);</span></span>
+<span><span style="color:#24292E">}</span></span></code></pre></div><h1 id="异步问题">异步问题 </h1><p>无法使用 promise，async/await，如何保证网络请求后，我将结果赋值给变量，另一个地方用到这个变量是在请求后呢？ 可以使用callback。</p><div><span style="color:#6a737d;font-size:12px">js</span><pre style="background-color:#f6f8fa;border-radius:6px;padding:12px 16px;overflow-x:auto;font-size:13px;line-height:1.6"><code><span><span style="color:#D73A49">function</span><span style="color:#6F42C1"> ajaxGET</span><span style="color:#24292E">(</span><span style="color:#E36209">url</span><span style="color:#24292E">, </span><span style="color:#E36209">params</span><span style="color:#24292E">, </span><span style="color:#E36209">callback</span><span style="color:#24292E">) {</span></span>
+<span><span style="color:#24292E">    $.</span><span style="color:#6F42C1">ajax</span><span style="color:#24292E">({</span></span>
+<span><span style="color:#24292E">        url: url,</span></span>
+<span><span style="color:#24292E">        type: </span><span style="color:#032F62">"GET"</span><span style="color:#24292E">,</span></span>
+<span><span style="color:#24292E">        data: params,</span></span>
+<span><span style="color:#24292E">        dataType: </span><span style="color:#032F62">"json"</span><span style="color:#24292E">,</span></span>
+<span><span style="color:#6F42C1">        success</span><span style="color:#24292E">: </span><span style="color:#D73A49">function</span><span style="color:#24292E"> (</span><span style="color:#E36209">res</span><span style="color:#24292E">) {</span></span>
+<span><span style="color:#6F42C1">            callback</span><span style="color:#24292E">(res);</span></span>
+<span><span style="color:#24292E">        },</span></span>
+<span><span style="color:#6F42C1">        error</span><span style="color:#24292E">: </span><span style="color:#D73A49">function</span><span style="color:#24292E"> (</span><span style="color:#E36209">err</span><span style="color:#24292E">) {</span></span>
+<span><span style="color:#24292E">            console.</span><span style="color:#6F42C1">error</span><span style="color:#24292E">(</span><span style="color:#032F62">"GET 请求失败:"</span><span style="color:#24292E">, err);</span></span>
+<span><span style="color:#24292E">        }</span></span>
+<span><span style="color:#24292E">    });</span></span>
+<span><span style="color:#24292E">}</span></span></code></pre></div><p>问题在于希望一个请求的结果，解析处理后作为另一个请求的参数，就有先后顺序，导致出现了复杂的嵌套，即回调地狱。 还是有点头疼的。</p><div><span style="color:#6a737d;font-size:12px">js</span><pre style="background-color:#f6f8fa;border-radius:6px;padding:12px 16px;overflow-x:auto;font-size:13px;line-height:1.6"><code><span><span style="color:#6F42C1">ajaxGET</span><span style="color:#24292E">(url1, params1, </span><span style="color:#D73A49">function</span><span style="color:#24292E"> (</span><span style="color:#E36209">res1</span><span style="color:#24292E">) {</span></span>
+<span><span style="color:#D73A49">    var</span><span style="color:#24292E"> params2 </span><span style="color:#D73A49">=</span><span style="color:#6F42C1"> solve1</span><span style="color:#24292E">(res1);</span></span>
+<span><span style="color:#6F42C1">    ajaxGET</span><span style="color:#24292E">(url2, params2, </span><span style="color:#D73A49">function</span><span style="color:#24292E"> (</span><span style="color:#E36209">res2</span><span style="color:#24292E">) {</span></span>
+<span><span style="color:#6A737D">        // ......</span></span>
+<span><span style="color:#24292E">    })</span></span>
+<span><span style="color:#24292E">})</span></span></code></pre></div><h1 id="总结">总结 </h1><p>语法不习惯是一方面，保证ie8和现代浏览器网页的显示行为一致又是一个难点。</p><p>最近看了一圈jquery和extjs，没看到查看大图的组件。</p><p>尝试写个demo，就发现事件监听、图像DOM的属性等等的，ie8和现代浏览器不一致的问题。</p></div>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[远程桌面端口转发]]></title>
-            <link>https://mqnu00.github.io/blog//posts/ops/remote-desktop-port-forwarding/remote-desktop-port-forwarding.html</link>
-            <guid isPermaLink="false">https://mqnu00.github.io/blog//posts/ops/remote-desktop-port-forwarding/remote-desktop-port-forwarding.html</guid>
+            <link>https://mqnu00.github.io/blog/posts/ops/remote-desktop-port-forwarding/remote-desktop-port-forwarding.html</link>
+            <guid isPermaLink="false">https://mqnu00.github.io/blog/posts/ops/remote-desktop-port-forwarding/remote-desktop-port-forwarding.html</guid>
             <pubDate>Fri, 11 Sep 2026 06:49:00 GMT</pubDate>
-            <content:encoded><![CDATA[<div><h1 id="远程桌面端口转发" tabindex="-1">远程桌面端口转发 <a class="header-anchor" href="#远程桌面端口转发" aria-label="Permalink to &quot;远程桌面端口转发&quot;">​</a></h1><h2 id="背景" tabindex="-1">背景 <a class="header-anchor" href="#背景" aria-label="Permalink to &quot;背景&quot;">​</a></h2><p>基于上一篇 <a href="https://mqnu00.github.io/blog/posts/ops/ssh-port-forwarding/ssh-port-forwarding.html" target="_blank" rel="noreferrer">SSH端口转发</a>。</p><p>有一天想起来家里用来打游戏的电脑A还开着，A和服务器B在同一局域网下，我的笔记本C不在局域网，通过 FRPC 透传了B的 SSH 端口。</p><p>想要实现B转发A的3389远程桌面端口。</p><h2 id="过程" tabindex="-1">过程 <a class="header-anchor" href="#过程" aria-label="Permalink to &quot;过程&quot;">​</a></h2><h3 id="探测a的ip" tabindex="-1">探测A的IP <a class="header-anchor" href="#探测a的ip" aria-label="Permalink to &quot;探测A的IP&quot;">​</a></h3><p>路由器只绑定了B的IP(192.168.10.37)，A没有绑定，所以要找。</p><p>最终确定了A是192.168.10.11(DESKTOP-RVFIIOO)</p><p>步骤：</p><ol><li><p>并发扫描 192.168.10.0/24 网段，读 <strong>ARP 缓存</strong>，找到9台在活动的设备（经过MAC去重）</p><table tabindex="0"><thead><tr><th>IP</th><th>MAC</th><th>备注</th></tr></thead><tbody><tr><td>192.168.10.1</td><td>d4:b7:09:24:db:71</td><td>路由器（网关）</td></tr><tr><td>192.168.10.4</td><td>2c:19:5c:29:6d:6c</td><td></td></tr><tr><td>192.168.10.7</td><td>b4:0e🇩🇪6f:49:6a</td><td></td></tr><tr><td>192.168.10.11</td><td>80:84:89:8f:a1:1f</td><td></td></tr><tr><td>192.168.10.50</td><td>ea:f5:2a:73:84:94</td><td>与 .75 同 MAC</td></tr><tr><td>192.168.10.60</td><td>16:91:1d:5b:5e:b9</td><td>与 .67 同 MAC</td></tr><tr><td>192.168.10.64</td><td>4c:6b:b8:4f:f7:87</td><td></td></tr><tr><td>192.168.10.66</td><td>90:fb:5d:e3:e5:1a</td><td>与 .77 同 MAC</td></tr><tr><td>192.168.10.67</td><td>16:91:1d:5b:5e:b9</td><td></td></tr><tr><td>192.168.10.71</td><td>ee:dc:b1:94:8f:45</td><td></td></tr><tr><td>192.168.10.75</td><td>ea:f5:2a:73:84:94</td><td></td></tr><tr><td>192.168.10.77</td><td>90:fb:5d:e3:e5:1a</td><td></td></tr></tbody></table></li><li><p>根据<strong>特征</strong>分辨windows主机</p><blockquote><p>特征：</p><ul><li><p>TTL Windows 默认 128，Linux 64，网络设备 255 通过 ping 发送 ICMP包，只有4台响应</p><table tabindex="0"><thead><tr><th>IP</th><th>TTL</th></tr></thead><tbody><tr><td>192.168.10.1</td><td>64</td></tr><tr><td>192.168.10.4</td><td>64</td></tr><tr><td>192.168.10.11</td><td>128</td></tr><tr><td>192.168.10.77</td><td>64</td></tr></tbody></table></li><li><p>windows 一般会开放 135/139/445/3389 等端口 通过TCP探测端口是否开放，最后确定只有 192.168.10.11 都符合</p></li></ul></blockquote></li><li><p>通过<strong>NetBIOS over TCP/IP (NetBT) 协议</strong>查询主机名</p><div class="language-shell vp-adaptive-theme"><span class="lang">shell</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>$</span><span> nmblookup</span><span> -A</span><span> 192.168.10.11</span><span> 2&gt;&amp;1</span></span>
-<span class="line"><span>Looking</span><span> up</span><span> status</span><span> of</span><span> 192.168.10.11</span></span>
-<span class="line"><span>	DESKTOP-RVFIIOO</span><span> &lt;</span><span>0</span><span>0&gt;</span><span> -</span><span>         M</span><span> &lt;</span><span>ACTIV</span><span>E</span><span>&gt;</span><span> </span></span>
-<span class="line"><span>	WORKGROUP</span><span>       &lt;</span><span>0</span><span>0&gt;</span><span> -</span><span> &lt;</span><span>GROU</span><span>P</span><span>&gt;</span><span> M</span><span> &lt;</span><span>ACTIV</span><span>E</span><span>&gt;</span><span> </span></span>
-<span class="line"><span>	DESKTOP-RVFIIOO</span><span> &lt;</span><span>2</span><span>0&gt;</span><span> -</span><span>         M</span><span> &lt;</span><span>ACTIV</span><span>E</span><span>&gt;</span><span> </span></span>
-<span class="line"></span>
-<span class="line"><span>	MAC</span><span> Address</span><span> =</span><span> 80-84-89-8F-A1-1F</span></span></code></pre></div></li></ol><h3 id="通过-ssh-端口转发" tabindex="-1">通过 SSH 端口转发 <a class="header-anchor" href="#通过-ssh-端口转发" aria-label="Permalink to &quot;通过 SSH 端口转发&quot;">​</a></h3><div class="language-shell vp-adaptive-theme"><span class="lang">shell</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>ssh</span><span> -N</span><span> -L</span><span> 3389:192.168.10.11:3389</span><span> -p</span><span> &lt;</span><span>frp映射的SSH端</span><span>口</span><span>&gt;</span><span> &lt;</span><span>用户</span><span>名</span><span>&gt;</span><span>@</span><span>&lt;</span><span>frps公网I</span><span>P</span><span>&gt;</span></span></code></pre></div><h2 id="最终效果" tabindex="-1">最终效果 <a class="header-anchor" href="#最终效果" aria-label="Permalink to &quot;最终效果&quot;">​</a></h2><p><!----></p></div>]]></content:encoded>
+            <content:encoded><![CDATA[<div><h1 id="远程桌面端口转发">远程桌面端口转发 </h1><h2 id="背景">背景 </h2><p>基于上一篇 <a href="https://mqnu00.github.io/blog/posts/ops/ssh-port-forwarding/ssh-port-forwarding.html" target="_blank" rel="noreferrer">SSH端口转发</a>。</p><p>有一天想起来家里用来打游戏的电脑A还开着，A和服务器B在同一局域网下，我的笔记本C不在局域网，通过 FRPC 透传了B的 SSH 端口。</p><p>想要实现B转发A的3389远程桌面端口。</p><h2 id="过程">过程 </h2><h3 id="探测a的ip">探测A的IP </h3><p>路由器只绑定了B的IP(192.168.10.37)，A没有绑定，所以要找。</p><p>最终确定了A是192.168.10.11(DESKTOP-RVFIIOO)</p><p>步骤：</p><ol><li><p>并发扫描 192.168.10.0/24 网段，读 <strong>ARP 缓存</strong>，找到9台在活动的设备（经过MAC去重）</p><table><thead><tr><th>IP</th><th>MAC</th><th>备注</th></tr></thead><tbody><tr><td>192.168.10.1</td><td>d4:b7:09:24:db:71</td><td>路由器（网关）</td></tr><tr><td>192.168.10.4</td><td>2c:19:5c:29:6d:6c</td><td></td></tr><tr><td>192.168.10.7</td><td>b4:0e🇩🇪6f:49:6a</td><td></td></tr><tr><td>192.168.10.11</td><td>80:84:89:8f:a1:1f</td><td></td></tr><tr><td>192.168.10.50</td><td>ea:f5:2a:73:84:94</td><td>与 .75 同 MAC</td></tr><tr><td>192.168.10.60</td><td>16:91:1d:5b:5e:b9</td><td>与 .67 同 MAC</td></tr><tr><td>192.168.10.64</td><td>4c:6b:b8:4f:f7:87</td><td></td></tr><tr><td>192.168.10.66</td><td>90:fb:5d:e3:e5:1a</td><td>与 .77 同 MAC</td></tr><tr><td>192.168.10.67</td><td>16:91:1d:5b:5e:b9</td><td></td></tr><tr><td>192.168.10.71</td><td>ee:dc:b1:94:8f:45</td><td></td></tr><tr><td>192.168.10.75</td><td>ea:f5:2a:73:84:94</td><td></td></tr><tr><td>192.168.10.77</td><td>90:fb:5d:e3:e5:1a</td><td></td></tr></tbody></table></li><li><p>根据<strong>特征</strong>分辨windows主机</p><blockquote><p>特征：</p><ul><li><p>TTL Windows 默认 128，Linux 64，网络设备 255 通过 ping 发送 ICMP包，只有4台响应</p><table><thead><tr><th>IP</th><th>TTL</th></tr></thead><tbody><tr><td>192.168.10.1</td><td>64</td></tr><tr><td>192.168.10.4</td><td>64</td></tr><tr><td>192.168.10.11</td><td>128</td></tr><tr><td>192.168.10.77</td><td>64</td></tr></tbody></table></li><li><p>windows 一般会开放 135/139/445/3389 等端口 通过TCP探测端口是否开放，最后确定只有 192.168.10.11 都符合</p></li></ul></blockquote></li><li><p>通过<strong>NetBIOS over TCP/IP (NetBT) 协议</strong>查询主机名</p><div><span style="color:#6a737d;font-size:12px">shell</span><pre style="background-color:#f6f8fa;border-radius:6px;padding:12px 16px;overflow-x:auto;font-size:13px;line-height:1.6"><code><span><span style="color:#6F42C1">$</span><span style="color:#032F62"> nmblookup</span><span style="color:#005CC5"> -A</span><span style="color:#005CC5"> 192.168.10.11</span><span style="color:#D73A49"> 2&gt;&amp;1</span></span>
+<span><span style="color:#6F42C1">Looking</span><span style="color:#032F62"> up</span><span style="color:#032F62"> status</span><span style="color:#032F62"> of</span><span style="color:#005CC5"> 192.168.10.11</span></span>
+<span><span style="color:#6F42C1">	DESKTOP-RVFIIOO</span><span style="color:#D73A49"> &lt;</span><span style="color:#032F62">0</span><span style="color:#D73A49">0&gt;</span><span style="color:#032F62"> -</span><span style="color:#032F62">         M</span><span style="color:#D73A49"> &lt;</span><span style="color:#032F62">ACTIV</span><span style="color:#24292E">E</span><span style="color:#D73A49">&gt;</span><span style="color:#24292E"> </span></span>
+<span><span style="color:#6F42C1">	WORKGROUP</span><span style="color:#D73A49">       &lt;</span><span style="color:#032F62">0</span><span style="color:#D73A49">0&gt;</span><span style="color:#032F62"> -</span><span style="color:#D73A49"> &lt;</span><span style="color:#032F62">GROU</span><span style="color:#24292E">P</span><span style="color:#D73A49">&gt;</span><span style="color:#032F62"> M</span><span style="color:#D73A49"> &lt;</span><span style="color:#032F62">ACTIV</span><span style="color:#24292E">E</span><span style="color:#D73A49">&gt;</span><span style="color:#24292E"> </span></span>
+<span><span style="color:#6F42C1">	DESKTOP-RVFIIOO</span><span style="color:#D73A49"> &lt;</span><span style="color:#032F62">2</span><span style="color:#D73A49">0&gt;</span><span style="color:#032F62"> -</span><span style="color:#032F62">         M</span><span style="color:#D73A49"> &lt;</span><span style="color:#032F62">ACTIV</span><span style="color:#24292E">E</span><span style="color:#D73A49">&gt;</span><span style="color:#24292E"> </span></span>
+<span></span>
+<span><span style="color:#6F42C1">	MAC</span><span style="color:#032F62"> Address</span><span style="color:#032F62"> =</span><span style="color:#032F62"> 80-84-89-8F-A1-1F</span></span></code></pre></div></li></ol><h3 id="通过-ssh-端口转发">通过 SSH 端口转发 </h3><div><span style="color:#6a737d;font-size:12px">shell</span><pre style="background-color:#f6f8fa;border-radius:6px;padding:12px 16px;overflow-x:auto;font-size:13px;line-height:1.6"><code><span><span style="color:#6F42C1">ssh</span><span style="color:#005CC5"> -N</span><span style="color:#005CC5"> -L</span><span style="color:#032F62"> 3389:192.168.10.11:3389</span><span style="color:#005CC5"> -p</span><span style="color:#D73A49"> &lt;</span><span style="color:#032F62">frp映射的SSH端</span><span style="color:#24292E">口</span><span style="color:#D73A49">&gt;</span><span style="color:#D73A49"> &lt;</span><span style="color:#032F62">用户</span><span style="color:#24292E">名</span><span style="color:#D73A49">&gt;</span><span style="color:#032F62">@</span><span style="color:#D73A49">&lt;</span><span style="color:#032F62">frps公网I</span><span style="color:#24292E">P</span><span style="color:#D73A49">&gt;</span></span></code></pre></div><h2 id="最终效果">最终效果 </h2><p><img src="https://mqnu00.github.io/blog/assets/system-info.CMlqtxgi.png" alt="image-20260911144647143"><!----></p></div>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[SSH端口转发]]></title>
-            <link>https://mqnu00.github.io/blog//posts/ops/ssh-port-forwarding/ssh-port-forwarding.html</link>
-            <guid isPermaLink="false">https://mqnu00.github.io/blog//posts/ops/ssh-port-forwarding/ssh-port-forwarding.html</guid>
+            <link>https://mqnu00.github.io/blog/posts/ops/ssh-port-forwarding/ssh-port-forwarding.html</link>
+            <guid isPermaLink="false">https://mqnu00.github.io/blog/posts/ops/ssh-port-forwarding/ssh-port-forwarding.html</guid>
             <pubDate>Fri, 03 Jul 2026 02:48:00 GMT</pubDate>
-            <content:encoded><![CDATA[<div><h1 id="背景" tabindex="-1">背景 <a class="header-anchor" href="#背景" aria-label="Permalink to &quot;背景&quot;">​</a></h1><p>目前家里有一台小服务器</p><h2 id="配置" tabindex="-1">配置 <a class="header-anchor" href="#配置" aria-label="Permalink to &quot;配置&quot;">​</a></h2><table tabindex="0"><thead><tr><th>类型</th><th>参数</th></tr></thead><tbody><tr><td>OS</td><td>Ubuntu 22.04.5 LTS x86_64</td></tr><tr><td>Kernel</td><td>6.8.0-124-generic</td></tr><tr><td>Shell</td><td>zsh 5.8.1</td></tr><tr><td>CPU</td><td>Intel Celeron N3150 (4) @ 2.080GHz</td></tr><tr><td>Memory</td><td>2GB * 2 DDR3 1333 MHz</td></tr><tr><td>DISK</td><td>TOSHIBA DT01ACA050 机械硬盘 500G</td></tr><tr><td></td><td>Great Wall GW600 256GB 固态硬盘 2.5寸</td></tr><tr><td></td><td>Kingchuxing 256GB M.2 SATA 固态硬盘 2230 （外接移动硬盘）</td></tr></tbody></table><h2 id="网络环境" tabindex="-1">网络环境 <a class="header-anchor" href="#网络环境" aria-label="Permalink to &quot;网络环境&quot;">​</a></h2><p>使用小区免费的网络。IP分发只有IPV4，没有IPV6。</p><h3 id="tailscale" tabindex="-1">tailscale <a class="header-anchor" href="#tailscale" aria-label="Permalink to &quot;tailscale&quot;">​</a></h3><p>由于需要外网访问，使用了tailscale，但是没有自配derp，延迟很高。</p><div class="language-shell vp-adaptive-theme"><span class="lang">shell</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>&gt;</span><span> tailscale ping 100.71.186.58</span></span>
-<span class="line"><span>pong</span><span> from</span><span> laptop-mqnu00</span><span> (100.71.186.58) via DERP(</span><span>hkg</span><span>) in 329ms</span></span>
-<span class="line"><span>pong</span><span> from</span><span> laptop-mqnu00</span><span> (100.71.186.58) via DERP(</span><span>hkg</span><span>) in 318ms</span></span>
-<span class="line"><span>pong</span><span> from</span><span> laptop-mqnu00</span><span> (100.71.186.58) via DERP(</span><span>hkg</span><span>) in 343ms</span></span>
-<span class="line"><span>pong</span><span> from</span><span> laptop-mqnu00</span><span> (100.71.186.58) via DERP(</span><span>hkg</span><span>) in 291ms</span></span>
-<span class="line"><span>pong</span><span> from</span><span> laptop-mqnu00</span><span> (100.71.186.58) via DERP(</span><span>hkg</span><span>) in 266ms</span></span>
-<span class="line"><span>pong</span><span> from</span><span> laptop-mqnu00</span><span> (100.71.186.58) via DERP(</span><span>hkg</span><span>) in 312ms</span></span>
-<span class="line"><span>pong</span><span> from</span><span> laptop-mqnu00</span><span> (100.71.186.58) via DERP(</span><span>hkg</span><span>) in 328ms</span></span>
-<span class="line"><span>pong</span><span> from</span><span> laptop-mqnu00</span><span> (100.71.186.58) via DERP(</span><span>hkg</span><span>) in 317ms</span></span>
-<span class="line"><span>pong</span><span> from</span><span> laptop-mqnu00</span><span> (100.71.186.58) via DERP(</span><span>hkg</span><span>) in 318ms</span></span>
-<span class="line"><span>pong</span><span> from</span><span> laptop-mqnu00</span><span> (100.71.186.58) via DERP(</span><span>hkg</span><span>) in 311ms</span></span>
-<span class="line"><span>direct</span><span> connection</span><span> not</span><span> established</span></span></code></pre></div><h3 id="frp" tabindex="-1">frp <a class="header-anchor" href="#frp" aria-label="Permalink to &quot;frp&quot;">​</a></h3><p>寻找免费的frp服务，只能提供一两个端口，速率也只有10M左右。</p><p>出现端口不够用的情况。</p><h1 id="ssh端口转发" tabindex="-1">SSH端口转发 <a class="header-anchor" href="#ssh端口转发" aria-label="Permalink to &quot;SSH端口转发&quot;">​</a></h1><p>实现效果是FRP穿透内网服务器22端口的同时，通过SSH转发服务器的其他端口，使得外网能够访问服务器的其他端口，又不用真正打通。</p><div class="language-shell vp-adaptive-theme"><span class="lang">shell</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>ssh</span><span> -L</span><span> 本地端口:目标地址:目标端口</span><span> -p</span><span> [FRP映射的SSH端口] [用户名]@[服务器公网IP]</span></span></code></pre></div><p>比如我输入命令：</p><div class="language- vp-adaptive-theme"><span class="lang"></span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>ssh -L 5140:192.168.10.5:5140 -p xxxxx name@xxx.xxx.xxx.xxx</span></span></code></pre></div><p>我电脑本地访问 127.0.0.1:5140，会被ssh进程监听捕获，转发消息到内网服务器，然后消息原封不动的发送给内网的192.168.10.5:5140。</p><p>不过整个过程是通过FRP的连接，某种程度上实现了端口复用。</p></div>]]></content:encoded>
+            <content:encoded><![CDATA[<div><h1 id="背景">背景 </h1><p>目前家里有一台小服务器</p><h2 id="配置">配置 </h2><table><thead><tr><th>类型</th><th>参数</th></tr></thead><tbody><tr><td>OS</td><td>Ubuntu 22.04.5 LTS x86_64</td></tr><tr><td>Kernel</td><td>6.8.0-124-generic</td></tr><tr><td>Shell</td><td>zsh 5.8.1</td></tr><tr><td>CPU</td><td>Intel Celeron N3150 (4) @ 2.080GHz</td></tr><tr><td>Memory</td><td>2GB * 2 DDR3 1333 MHz</td></tr><tr><td>DISK</td><td>TOSHIBA DT01ACA050 机械硬盘 500G</td></tr><tr><td></td><td>Great Wall GW600 256GB 固态硬盘 2.5寸</td></tr><tr><td></td><td>Kingchuxing 256GB M.2 SATA 固态硬盘 2230 （外接移动硬盘）</td></tr></tbody></table><h2 id="网络环境">网络环境 </h2><p>使用小区免费的网络。IP分发只有IPV4，没有IPV6。</p><h3 id="tailscale">tailscale </h3><p>由于需要外网访问，使用了tailscale，但是没有自配derp，延迟很高。</p><div><span style="color:#6a737d;font-size:12px">shell</span><pre style="background-color:#f6f8fa;border-radius:6px;padding:12px 16px;overflow-x:auto;font-size:13px;line-height:1.6"><code><span><span style="color:#D73A49">&gt;</span><span style="color:#24292E"> tailscale ping 100.71.186.58</span></span>
+<span><span style="color:#6F42C1">pong</span><span style="color:#032F62"> from</span><span style="color:#032F62"> laptop-mqnu00</span><span style="color:#24292E"> (100.71.186.58) via DERP(</span><span style="color:#6F42C1">hkg</span><span style="color:#24292E">) in 329ms</span></span>
+<span><span style="color:#6F42C1">pong</span><span style="color:#032F62"> from</span><span style="color:#032F62"> laptop-mqnu00</span><span style="color:#24292E"> (100.71.186.58) via DERP(</span><span style="color:#6F42C1">hkg</span><span style="color:#24292E">) in 318ms</span></span>
+<span><span style="color:#6F42C1">pong</span><span style="color:#032F62"> from</span><span style="color:#032F62"> laptop-mqnu00</span><span style="color:#24292E"> (100.71.186.58) via DERP(</span><span style="color:#6F42C1">hkg</span><span style="color:#24292E">) in 343ms</span></span>
+<span><span style="color:#6F42C1">pong</span><span style="color:#032F62"> from</span><span style="color:#032F62"> laptop-mqnu00</span><span style="color:#24292E"> (100.71.186.58) via DERP(</span><span style="color:#6F42C1">hkg</span><span style="color:#24292E">) in 291ms</span></span>
+<span><span style="color:#6F42C1">pong</span><span style="color:#032F62"> from</span><span style="color:#032F62"> laptop-mqnu00</span><span style="color:#24292E"> (100.71.186.58) via DERP(</span><span style="color:#6F42C1">hkg</span><span style="color:#24292E">) in 266ms</span></span>
+<span><span style="color:#6F42C1">pong</span><span style="color:#032F62"> from</span><span style="color:#032F62"> laptop-mqnu00</span><span style="color:#24292E"> (100.71.186.58) via DERP(</span><span style="color:#6F42C1">hkg</span><span style="color:#24292E">) in 312ms</span></span>
+<span><span style="color:#6F42C1">pong</span><span style="color:#032F62"> from</span><span style="color:#032F62"> laptop-mqnu00</span><span style="color:#24292E"> (100.71.186.58) via DERP(</span><span style="color:#6F42C1">hkg</span><span style="color:#24292E">) in 328ms</span></span>
+<span><span style="color:#6F42C1">pong</span><span style="color:#032F62"> from</span><span style="color:#032F62"> laptop-mqnu00</span><span style="color:#24292E"> (100.71.186.58) via DERP(</span><span style="color:#6F42C1">hkg</span><span style="color:#24292E">) in 317ms</span></span>
+<span><span style="color:#6F42C1">pong</span><span style="color:#032F62"> from</span><span style="color:#032F62"> laptop-mqnu00</span><span style="color:#24292E"> (100.71.186.58) via DERP(</span><span style="color:#6F42C1">hkg</span><span style="color:#24292E">) in 318ms</span></span>
+<span><span style="color:#6F42C1">pong</span><span style="color:#032F62"> from</span><span style="color:#032F62"> laptop-mqnu00</span><span style="color:#24292E"> (100.71.186.58) via DERP(</span><span style="color:#6F42C1">hkg</span><span style="color:#24292E">) in 311ms</span></span>
+<span><span style="color:#6F42C1">direct</span><span style="color:#032F62"> connection</span><span style="color:#032F62"> not</span><span style="color:#032F62"> established</span></span></code></pre></div><h3 id="frp">frp </h3><p>寻找免费的frp服务，只能提供一两个端口，速率也只有10M左右。</p><p>出现端口不够用的情况。</p><h1 id="ssh端口转发">SSH端口转发 </h1><p>实现效果是FRP穿透内网服务器22端口的同时，通过SSH转发服务器的其他端口，使得外网能够访问服务器的其他端口，又不用真正打通。</p><div><span style="color:#6a737d;font-size:12px">shell</span><pre style="background-color:#f6f8fa;border-radius:6px;padding:12px 16px;overflow-x:auto;font-size:13px;line-height:1.6"><code><span><span style="color:#6F42C1">ssh</span><span style="color:#005CC5"> -L</span><span style="color:#032F62"> 本地端口:目标地址:目标端口</span><span style="color:#005CC5"> -p</span><span style="color:#24292E"> [FRP映射的SSH端口] [用户名]@[服务器公网IP]</span></span></code></pre></div><p>比如我输入命令：</p><div><span style="color:#6a737d;font-size:12px"></span><pre style="background-color:#f6f8fa;border-radius:6px;padding:12px 16px;overflow-x:auto;font-size:13px;line-height:1.6"><code><span><span>ssh -L 5140:192.168.10.5:5140 -p xxxxx name@xxx.xxx.xxx.xxx</span></span></code></pre></div><p>我电脑本地访问 127.0.0.1:5140，会被ssh进程监听捕获，转发消息到内网服务器，然后消息原封不动的发送给内网的192.168.10.5:5140。</p><p>不过整个过程是通过FRP的连接，某种程度上实现了端口复用。</p></div>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[2025总结]]></title>
-            <link>https://mqnu00.github.io/blog//posts/summary/2025总结.html</link>
-            <guid isPermaLink="false">https://mqnu00.github.io/blog//posts/summary/2025总结.html</guid>
+            <link>https://mqnu00.github.io/blog/posts/summary/2025总结.html</link>
+            <guid isPermaLink="false">https://mqnu00.github.io/blog/posts/summary/2025总结.html</guid>
             <pubDate>Wed, 31 Dec 2025 08:55:00 GMT</pubDate>
-            <content:encoded><![CDATA[<div><h1 id="时间线" tabindex="-1">时间线 <a class="header-anchor" href="#时间线" aria-label="Permalink to &quot;时间线&quot;">​</a></h1><p>2月，离开实习公司，在杭州待了2个月左右，准备春招面试。</p><p>4月，春招结尾，收到了1份offer。由于实习公司的经历+春招的打击，我对自己不是很自信，决定提前实习了解一下这个公司。</p><p>5月，劳动节假期过后开始实习</p><p>6月，请假一周，回学校，毕业设计答辩，和朋友聚了聚，和家里见了面。</p><p>7月，入职，试用期。</p><p>12月，收到试用通过结果。</p><h1 id="总结" tabindex="-1">总结 <a class="header-anchor" href="#总结" aria-label="Permalink to &quot;总结&quot;">​</a></h1><p>代码和业务在一起才有价值。</p><p>公司的大哥在对需求的时候常说的一句：没有什么是做不到的，无非是多花点时间罢了，等我排期。</p><p>review我的代码常说的一句：不要想的那么复杂，接口功能拆的更细分点，不然你后面怎么维护？</p></div>]]></content:encoded>
+            <content:encoded><![CDATA[<div><h1 id="时间线">时间线 </h1><p>2月，离开实习公司，在杭州待了2个月左右，准备春招面试。</p><p>4月，春招结尾，收到了1份offer。由于实习公司的经历+春招的打击，我对自己不是很自信，决定提前实习了解一下这个公司。</p><p>5月，劳动节假期过后开始实习</p><p>6月，请假一周，回学校，毕业设计答辩，和朋友聚了聚，和家里见了面。</p><p>7月，入职，试用期。</p><p>12月，收到试用通过结果。</p><h1 id="总结">总结 </h1><p>代码和业务在一起才有价值。</p><p>公司的大哥在对需求的时候常说的一句：没有什么是做不到的，无非是多花点时间罢了，等我排期。</p><p>review我的代码常说的一句：不要想的那么复杂，接口功能拆的更细分点，不然你后面怎么维护？</p></div>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[给文章添加tag并支持搜索索引]]></title>
-            <link>https://mqnu00.github.io/blog//posts/vitepress/article-tag.html</link>
-            <guid isPermaLink="false">https://mqnu00.github.io/blog//posts/vitepress/article-tag.html</guid>
+            <link>https://mqnu00.github.io/blog/posts/vitepress/article-tag.html</link>
+            <guid isPermaLink="false">https://mqnu00.github.io/blog/posts/vitepress/article-tag.html</guid>
             <pubDate>Wed, 10 Dec 2025 07:19:00 GMT</pubDate>
-            <content:encoded><![CDATA[<div><h1 id="添加tag" tabindex="-1">添加TAG <a class="header-anchor" href="#添加tag" aria-label="Permalink to &quot;添加TAG&quot;">​</a></h1><p>文档的元数据可以通过<code>-- --</code>在文档开头标识。</p><p>类似于：</p><div class="language- vp-adaptive-theme"><span class="lang"></span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>---</span></span>
-<span class="line"><span>title: 如何给文章添加tag并支持被VitePress自带的本地搜索索引</span></span>
-<span class="line"><span>date: 2025-12-10 15:19</span></span>
-<span class="line"><span>author: 广习习</span></span>
-<span class="line"><span>tags: [技术分享, VitePress]</span></span>
-<span class="line"><span>---</span></span></code></pre></div><p>vitepress 解析 md 转换成 html 的过程可以使用 Layout.vue 来自定义布局。</p><p>看下面的代码，解析 md 文件的元数据（frontmatter）并使用naive-ui 的 tag 组件显示。</p><p>这里的文章时间也需要手动更新，而不是根据 git 提交的时间。</p><div class="language-html vp-adaptive-theme"><span class="lang">html</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>&lt;!-- Layout.vue --&gt;</span></span>
-<span class="line"><span>&lt;</span><span>template</span><span>&gt;</span></span>
-<span class="line"><span>  &lt;</span><span>NConfigProvider</span><span> &gt;</span></span>
-<span class="line"><span>    &lt;!-- 保留默认主题的布局 --&gt;</span></span>
-<span class="line"><span>    &lt;</span><span>DefaultTheme.Layout</span><span>&gt;</span></span>
-<span class="line"><span>      &lt;!-- 在标题区域插入更新时间 --&gt;</span></span>
-<span class="line"><span>      &lt;</span><span>template</span><span> #doc-before</span><span> &gt;</span></span>
-<span class="line"><span>        &lt;</span><span>div</span><span> style</span><span>=</span><span>"margin-bottom: 30px;"</span><span>&gt;</span></span>
-<span class="line"><span>          &lt;</span><span>NH1</span><span>&gt;{{ frontmatter.title }}&lt;/</span><span>NH1</span><span>&gt;</span></span>
-<span class="line"><span>          &lt;</span><span>div</span><span> style</span><span>=</span><span>"display: flex; flex-direction: column; "</span><span>&gt;</span></span>
-<span class="line"><span>            &lt;</span><span>NP</span><span>&gt;更新时间： {{ frontmatter.date }}&lt;/</span><span>NP</span><span>&gt;</span></span>
-<span class="line"><span>            &lt;!-- &lt;span&gt;标签：&lt;/span&gt; --&gt;</span></span>
-<span class="line"><span>            &lt;</span><span>div</span><span> v-if</span><span>=</span><span>"frontmatter.tags"</span><span> style</span><span>=</span><span>"display: flex; gap: 10px; margin-bottom: 10px;"</span><span>&gt;</span></span>
-<span class="line"><span>              &lt;</span><span>NTag</span><span> size</span><span>=</span><span>"small"</span><span> type</span><span>=</span><span>"info"</span><span> v-for</span><span>=</span><span>"tag in frontmatter.tags"</span><span>&gt;</span></span>
-<span class="line"><span>                {{tag}}</span></span>
-<span class="line"><span>              &lt;/</span><span>NTag</span><span>&gt;</span></span>
-<span class="line"><span>            &lt;/</span><span>div</span><span>&gt;</span></span>
-<span class="line"><span>          &lt;/</span><span>div</span><span>&gt;</span></span>
-<span class="line"><span>          </span></span>
-<span class="line"><span>        &lt;/</span><span>div</span><span>&gt;</span></span>
-<span class="line"><span>      &lt;/</span><span>template</span><span>&gt;</span></span>
-<span class="line"><span>    &lt;/</span><span>DefaultTheme.Layout</span><span>&gt;</span></span>
-<span class="line"><span>  &lt;/</span><span>NConfigProvider</span><span>&gt;</span></span>
-<span class="line"><span>&lt;/</span><span>template</span><span>&gt;</span></span></code></pre></div><h1 id="如何允许-localsearch-索引-tag" tabindex="-1">如何允许 localsearch 索引 tag <a class="header-anchor" href="#如何允许-localsearch-索引-tag" aria-label="Permalink to &quot;如何允许 localsearch 索引 tag&quot;">​</a></h1><p>vitepress 的 localsearch 基于 minisearch。喂给搜索的数据是md文件而不是经过layout.vue重新渲染的结果。并且不同的标签有不同的权重，其中 h1~h6 这种标题的权重是比较大的，而 p 标签里的文字就有可能搜不到。</p><p>想要喂给搜索数据，并且增大搜索权重，我给出下面的代码示例，也可以参考 <a href="https://vuejs.github.io/vitepress/v1/zh/reference/default-theme-search#custom-content-renderer" target="_blank" rel="noreferrer">vitepress文档-自定义渲染内容</a></p><div class="language-ts vp-adaptive-theme"><span class="lang">ts</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>// .vitepress/config.mts vitepress搜索配置</span></span>
-<span class="line"><span>search</span><span>: {</span></span>
-<span class="line"><span>      provider</span><span>: </span><span>'local'</span><span>,</span></span>
-<span class="line"><span>      options</span><span>: {</span></span>
-<span class="line"><span>        _render</span><span>: (</span><span>src</span><span>, </span><span>env</span><span>, </span><span>md</span><span>) </span><span>=&gt;</span><span> {</span></span>
-<span class="line"><span>          const</span><span> html</span><span> =</span><span> md.</span><span>render</span><span>(src, env)</span></span>
-<span class="line"><span>          if</span><span> (env.frontmatter?.tags) {</span></span>
-<span class="line"><span>            const</span><span> tags</span><span> =</span><span> env.frontmatter.tags </span><span>as</span><span> Array</span><span>&lt;</span><span>string</span><span>&gt;</span></span>
-<span class="line"><span>            const</span><span> title</span><span> =</span><span> env.frontmatter?.title </span><span>as</span><span> string</span><span> |</span><span> undefined</span></span>
-<span class="line"><span>            </span></span>
-<span class="line"><span>            // 插入到内容最前面，确保被索引</span></span>
-<span class="line"><span>            return</span><span>  md.</span><span>render</span><span>(</span><span>`# ${</span><span>title</span><span> ?</span><span> title</span><span> +</span><span> ' &gt; '</span><span> :</span><span> ''} tags: ${</span><span>tags</span><span>.</span><span>join</span><span>(</span><span>' '</span><span>)</span><span>}`</span><span>) </span><span>+</span><span> html</span></span>
-<span class="line"><span>          }</span></span>
-<span class="line"><span>          return</span><span> html</span></span>
-<span class="line"><span>        }</span></span>
-<span class="line"><span>      }</span></span>
-<span class="line"><span>    },</span></span></code></pre></div><p>不过有个缺点是 dev 模式不会因为 md 元数据修改而重新生成搜索索引</p></div>]]></content:encoded>
+            <content:encoded><![CDATA[<div><h1 id="添加tag">添加TAG </h1><p>文档的元数据可以通过<code>-- --</code>在文档开头标识。</p><p>类似于：</p><div><span style="color:#6a737d;font-size:12px"></span><pre style="background-color:#f6f8fa;border-radius:6px;padding:12px 16px;overflow-x:auto;font-size:13px;line-height:1.6"><code><span><span>---</span></span>
+<span><span>title: 如何给文章添加tag并支持被VitePress自带的本地搜索索引</span></span>
+<span><span>date: 2025-12-10 15:19</span></span>
+<span><span>author: 广习习</span></span>
+<span><span>tags: [技术分享, VitePress]</span></span>
+<span><span>---</span></span></code></pre></div><p>vitepress 解析 md 转换成 html 的过程可以使用 Layout.vue 来自定义布局。</p><p>看下面的代码，解析 md 文件的元数据（frontmatter）并使用naive-ui 的 tag 组件显示。</p><p>这里的文章时间也需要手动更新，而不是根据 git 提交的时间。</p><div><span style="color:#6a737d;font-size:12px">html</span><pre style="background-color:#f6f8fa;border-radius:6px;padding:12px 16px;overflow-x:auto;font-size:13px;line-height:1.6"><code><span><span style="color:#6A737D">&lt;!-- Layout.vue --&gt;</span></span>
+<span><span style="color:#24292E">&lt;</span><span style="color:#22863A">template</span><span style="color:#24292E">&gt;</span></span>
+<span><span style="color:#24292E">  &lt;</span><span style="color:#B31D28">NConfigProvider</span><span style="color:#24292E"> &gt;</span></span>
+<span><span style="color:#6A737D">    &lt;!-- 保留默认主题的布局 --&gt;</span></span>
+<span><span style="color:#24292E">    &lt;</span><span style="color:#B31D28">DefaultTheme.Layout</span><span style="color:#24292E">&gt;</span></span>
+<span><span style="color:#6A737D">      &lt;!-- 在标题区域插入更新时间 --&gt;</span></span>
+<span><span style="color:#24292E">      &lt;</span><span style="color:#22863A">template</span><span style="color:#6F42C1"> #doc-before</span><span style="color:#24292E"> &gt;</span></span>
+<span><span style="color:#24292E">        &lt;</span><span style="color:#22863A">div</span><span style="color:#6F42C1"> style</span><span style="color:#24292E">=</span><span style="color:#032F62">"margin-bottom: 30px;"</span><span style="color:#24292E">&gt;</span></span>
+<span><span style="color:#24292E">          &lt;</span><span style="color:#B31D28">NH1</span><span style="color:#24292E">&gt;{{ frontmatter.title }}&lt;/</span><span style="color:#B31D28">NH1</span><span style="color:#24292E">&gt;</span></span>
+<span><span style="color:#24292E">          &lt;</span><span style="color:#22863A">div</span><span style="color:#6F42C1"> style</span><span style="color:#24292E">=</span><span style="color:#032F62">"display: flex; flex-direction: column; "</span><span style="color:#24292E">&gt;</span></span>
+<span><span style="color:#24292E">            &lt;</span><span style="color:#B31D28">NP</span><span style="color:#24292E">&gt;更新时间： {{ frontmatter.date }}&lt;/</span><span style="color:#B31D28">NP</span><span style="color:#24292E">&gt;</span></span>
+<span><span style="color:#6A737D">            &lt;!-- &lt;span&gt;标签：&lt;/span&gt; --&gt;</span></span>
+<span><span style="color:#24292E">            &lt;</span><span style="color:#22863A">div</span><span style="color:#6F42C1"> v-if</span><span style="color:#24292E">=</span><span style="color:#032F62">"frontmatter.tags"</span><span style="color:#6F42C1"> style</span><span style="color:#24292E">=</span><span style="color:#032F62">"display: flex; gap: 10px; margin-bottom: 10px;"</span><span style="color:#24292E">&gt;</span></span>
+<span><span style="color:#24292E">              &lt;</span><span style="color:#B31D28">NTag</span><span style="color:#6F42C1"> size</span><span style="color:#24292E">=</span><span style="color:#032F62">"small"</span><span style="color:#6F42C1"> type</span><span style="color:#24292E">=</span><span style="color:#032F62">"info"</span><span style="color:#6F42C1"> v-for</span><span style="color:#24292E">=</span><span style="color:#032F62">"tag in frontmatter.tags"</span><span style="color:#24292E">&gt;</span></span>
+<span><span style="color:#24292E">                {{tag}}</span></span>
+<span><span style="color:#24292E">              &lt;/</span><span style="color:#B31D28">NTag</span><span style="color:#24292E">&gt;</span></span>
+<span><span style="color:#24292E">            &lt;/</span><span style="color:#22863A">div</span><span style="color:#24292E">&gt;</span></span>
+<span><span style="color:#24292E">          &lt;/</span><span style="color:#22863A">div</span><span style="color:#24292E">&gt;</span></span>
+<span><span style="color:#24292E">          </span></span>
+<span><span style="color:#24292E">        &lt;/</span><span style="color:#22863A">div</span><span style="color:#24292E">&gt;</span></span>
+<span><span style="color:#24292E">      &lt;/</span><span style="color:#22863A">template</span><span style="color:#24292E">&gt;</span></span>
+<span><span style="color:#24292E">    &lt;/</span><span style="color:#B31D28">DefaultTheme.Layout</span><span style="color:#24292E">&gt;</span></span>
+<span><span style="color:#24292E">  &lt;/</span><span style="color:#B31D28">NConfigProvider</span><span style="color:#24292E">&gt;</span></span>
+<span><span style="color:#24292E">&lt;/</span><span style="color:#22863A">template</span><span style="color:#24292E">&gt;</span></span></code></pre></div><h1 id="如何允许-localsearch-索引-tag">如何允许 localsearch 索引 tag </h1><p>vitepress 的 localsearch 基于 minisearch。喂给搜索的数据是md文件而不是经过layout.vue重新渲染的结果。并且不同的标签有不同的权重，其中 h1~h6 这种标题的权重是比较大的，而 p 标签里的文字就有可能搜不到。</p><p>想要喂给搜索数据，并且增大搜索权重，我给出下面的代码示例，也可以参考 <a href="https://vuejs.github.io/vitepress/v1/zh/reference/default-theme-search#custom-content-renderer" target="_blank" rel="noreferrer">vitepress文档-自定义渲染内容</a></p><div><span style="color:#6a737d;font-size:12px">ts</span><pre style="background-color:#f6f8fa;border-radius:6px;padding:12px 16px;overflow-x:auto;font-size:13px;line-height:1.6"><code><span><span style="color:#6A737D">// .vitepress/config.mts vitepress搜索配置</span></span>
+<span><span style="color:#6F42C1">search</span><span style="color:#24292E">: {</span></span>
+<span><span style="color:#6F42C1">      provider</span><span style="color:#24292E">: </span><span style="color:#032F62">'local'</span><span style="color:#24292E">,</span></span>
+<span><span style="color:#6F42C1">      options</span><span style="color:#24292E">: {</span></span>
+<span><span style="color:#6F42C1">        _render</span><span style="color:#24292E">: (</span><span style="color:#E36209">src</span><span style="color:#24292E">, </span><span style="color:#E36209">env</span><span style="color:#24292E">, </span><span style="color:#E36209">md</span><span style="color:#24292E">) </span><span style="color:#D73A49">=&gt;</span><span style="color:#24292E"> {</span></span>
+<span><span style="color:#D73A49">          const</span><span style="color:#005CC5"> html</span><span style="color:#D73A49"> =</span><span style="color:#24292E"> md.</span><span style="color:#6F42C1">render</span><span style="color:#24292E">(src, env)</span></span>
+<span><span style="color:#D73A49">          if</span><span style="color:#24292E"> (env.frontmatter?.tags) {</span></span>
+<span><span style="color:#D73A49">            const</span><span style="color:#005CC5"> tags</span><span style="color:#D73A49"> =</span><span style="color:#24292E"> env.frontmatter.tags </span><span style="color:#D73A49">as</span><span style="color:#6F42C1"> Array</span><span style="color:#24292E">&lt;</span><span style="color:#005CC5">string</span><span style="color:#24292E">&gt;</span></span>
+<span><span style="color:#D73A49">            const</span><span style="color:#005CC5"> title</span><span style="color:#D73A49"> =</span><span style="color:#24292E"> env.frontmatter?.title </span><span style="color:#D73A49">as</span><span style="color:#005CC5"> string</span><span style="color:#D73A49"> |</span><span style="color:#005CC5"> undefined</span></span>
+<span><span style="color:#24292E">            </span></span>
+<span><span style="color:#6A737D">            // 插入到内容最前面，确保被索引</span></span>
+<span><span style="color:#D73A49">            return</span><span style="color:#24292E">  md.</span><span style="color:#6F42C1">render</span><span style="color:#24292E">(</span><span style="color:#032F62">`# ${</span><span style="color:#24292E">title</span><span style="color:#D73A49"> ?</span><span style="color:#24292E"> title</span><span style="color:#D73A49"> +</span><span style="color:#032F62"> ' &gt; '</span><span style="color:#D73A49"> :</span><span style="color:#032F62"> ''} tags: ${</span><span style="color:#24292E">tags</span><span style="color:#032F62">.</span><span style="color:#6F42C1">join</span><span style="color:#032F62">(</span><span style="color:#032F62">' '</span><span style="color:#032F62">)</span><span style="color:#032F62">}`</span><span style="color:#24292E">) </span><span style="color:#D73A49">+</span><span style="color:#24292E"> html</span></span>
+<span><span style="color:#24292E">          }</span></span>
+<span><span style="color:#D73A49">          return</span><span style="color:#24292E"> html</span></span>
+<span><span style="color:#24292E">        }</span></span>
+<span><span style="color:#24292E">      }</span></span>
+<span><span style="color:#24292E">    },</span></span></code></pre></div><p>不过有个缺点是 dev 模式不会因为 md 元数据修改而重新生成搜索索引</p></div>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[基于github的discussion为博客添加评论]]></title>
-            <link>https://mqnu00.github.io/blog//posts/vitepress/blog-comment-by-github-discussion.html</link>
-            <guid isPermaLink="false">https://mqnu00.github.io/blog//posts/vitepress/blog-comment-by-github-discussion.html</guid>
+            <link>https://mqnu00.github.io/blog/posts/vitepress/blog-comment-by-github-discussion.html</link>
+            <guid isPermaLink="false">https://mqnu00.github.io/blog/posts/vitepress/blog-comment-by-github-discussion.html</guid>
             <pubDate>Thu, 09 Apr 2026 08:16:00 GMT</pubDate>
-            <content:encoded><![CDATA[<div><h1 id="前期调研" tabindex="-1">前期调研 <a class="header-anchor" href="#前期调研" aria-label="Permalink to &quot;前期调研&quot;">​</a></h1><h2 id="参考已有的项目" tabindex="-1">参考已有的项目 <a class="header-anchor" href="#参考已有的项目" aria-label="Permalink to &quot;参考已有的项目&quot;">​</a></h2><p>实际上这样想法已经有人实现，并且已封装成简单配置即可使用的依赖，比如 <a href="https://github.com/giscus/giscus" target="_blank" rel="noreferrer">giscus</a>。</p><p>但是分析了相关功能，其中一个功能 <code>可以不为文章创建 discussion，等到有人评论再创建 discussion</code> 让我感到疑惑。</p><p>因为使用的是静态网页，并且想要创建 <code>github discussion</code> 是需要 <code>discussion id</code> 和 <code>access_token</code> 去请求 API 的。ID 不可能说有人创建评论就重新构建静态网页然后重新写入；token 也不建议保存在静态网页，因为不论怎么混淆也是能找到的。当然 gisgus 也不是把 token 保存在前端，而是走他们自己的 <code>github bot</code> 帮你创建评论，而它讨论的 API 是可以重复调用的，我有提 <a href="https://github.com/giscus/giscus/issues/1702" target="_blank" rel="noreferrer">重复创建讨论</a> 询问了一下，确实理解是设计需要。</p><p>因为不希望自己项目的评论区随地大小便，所以我决定自己写评论模块。</p><h2 id="查看-github-graphql-和-oauth-api" tabindex="-1">查看 github graphql 和 oauth api <a class="header-anchor" href="#查看-github-graphql-和-oauth-api" aria-label="Permalink to &quot;查看 github graphql 和 oauth api&quot;">​</a></h2><h3 id="oauth-api" tabindex="-1">oauth api <a class="header-anchor" href="#oauth-api" aria-label="Permalink to &quot;oauth api&quot;">​</a></h3><p>由于是静态网页，纯前端项目，我开始寻找有没有无需后端就能通过 oauth 并且 github 支持的协议。当然一开始找到了，是 <a href="https://github.blog/changelog/2025-07-14-pkce-support-for-oauth-and-github-app-authentication/" target="_blank" rel="noreferrer"><code>PKCE</code></a> 。</p><p>但是尝试跑通失败，最重要的一点是 github 验证不支持跨域，必须要有后端去转发请求。那这还不如正常的去走 ouath 呢。</p><p>正常走 oauth 是：</p><div class="language-text vp-adaptive-theme"><span class="lang">text</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>┌─────────┐      (1) 请求授权 (scope, client_id等)       ┌─────────────┐</span></span>
-<span class="line"><span>│         │ ─────────────────────────────────────────&gt; │             │</span></span>
-<span class="line"><span>│  前端    │                                            │   GitHub    │</span></span>
-<span class="line"><span>│ (浏览器) │ &lt;───────────────────────────────────────── │   服务器     │</span></span>
-<span class="line"><span>│         │      (2) 重定向到github的用户登录并授权页面     │             │</span></span>
-<span class="line"><span>└─────────┘                                            └─────────────┘</span></span>
-<span class="line"><span>     │                                                       │</span></span>
-<span class="line"><span>     │ (3) 重定向回前端并返回 code                              │</span></span>
-<span class="line"><span>     │ &lt;─────────────────────────────────────────────────────┘</span></span>
-<span class="line"><span>     │</span></span>
-<span class="line"><span>     │ (4) 传递 code </span></span>
-<span class="line"><span>     ▼</span></span>
-<span class="line"><span>┌─────────┐                                            ┌─────────────┐</span></span>
-<span class="line"><span>│         │      (5) 发送请求 (code + client_secret)    |			  |</span></span>
-<span class="line"><span>│         │				client_secret不能泄露			|			  |</span></span>
-<span class="line"><span>│  后端    │ ─────────────────────────────────────────&gt; │   GitHub    │</span></span>
-<span class="line"><span>│ (我们的) │                                            │   服务器     │</span></span>
-<span class="line"><span>│  服务    │ &lt;───────────────────────────────────────── │             │</span></span>
-<span class="line"><span>│         │      (6) 返回 access_token                  │             │</span></span>
-<span class="line"><span>└─────────┘                                            └─────────────┘</span></span>
-<span class="line"><span>     │</span></span>
-<span class="line"><span>     │ (7) 返回 access_token</span></span>
-<span class="line"><span>     ▼</span></span>
-<span class="line"><span>┌─────────┐</span></span>
-<span class="line"><span>│  前端    │</span></span>
-<span class="line"><span>└─────────┘</span></span></code></pre></div><h3 id="graphql" tabindex="-1">graphql <a class="header-anchor" href="#graphql" aria-label="Permalink to &quot;graphql&quot;">​</a></h3><p>请求数据，请求参数类似于 sql 语句，无论请求什么，请求对象固定为同一个网址，很有意思的一个设计思路。</p><p>详细信息参考 <a href="https://docs.github.com/zh/graphql/guides/using-the-graphql-api-for-discussions" target="_blank" rel="noreferrer">使用 GraphQL API 进行讨论</a></p><h2 id="后端选择" tabindex="-1">后端选择 <a class="header-anchor" href="#后端选择" aria-label="Permalink to &quot;后端选择&quot;">​</a></h2><p>选择了 cloudflare 免费的 worker</p><h1 id="具体实现" tabindex="-1">具体实现 <a class="header-anchor" href="#具体实现" aria-label="Permalink to &quot;具体实现&quot;">​</a></h1><h2 id="固定文章对应的讨论" tabindex="-1">固定文章对应的讨论 <a class="header-anchor" href="#固定文章对应的讨论" aria-label="Permalink to &quot;固定文章对应的讨论&quot;">​</a></h2><p>用户第一次评论时再创建文章对应的讨论，这个功能虽然好，但是很麻烦。</p><p>因此选择另一个方法：每有一篇新文章，就自动创建一个对应的讨论。这个写在了 vitepress 构建过程中。</p><div class="language-ts vp-adaptive-theme"><span class="lang">ts</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>async </span><span>transformPageData</span><span>(pageData) {</span></span>
-<span class="line"><span>    var</span><span> baseUrl </span><span>=</span><span> 'https://mqnu00.github.io/blog'</span></span>
-<span class="line"><span>    const</span><span> githubPath</span><span> =</span><span> '/blog/'</span><span> +</span><span> pageData.filePath</span></span>
-<span class="line"></span>
-<span class="line"><span>    pageData.url </span><span>=</span><span> `${</span><span>baseUrl</span><span>}/${</span><span>pageData</span><span>.</span><span>filePath</span><span>.</span><span>replace</span><span>(</span><span>'.md'</span><span>, </span><span>'.html'</span><span>)</span><span>}`</span></span>
-<span class="line"><span>    //   配置讨论</span></span>
-<span class="line"><span>    if</span><span>(pageData.frontmatter.discussion </span><span>==</span><span> null</span><span> &amp;&amp;</span><span> pageData.title </span><span>!=</span><span> null</span><span> &amp;&amp;</span><span> pageData.title </span><span>!==</span><span> ''</span><span>) {</span></span>
-<span class="line"><span>      console.</span><span>log</span><span>(</span><span>`创建讨论： ${</span><span>pageData</span><span>.</span><span>title</span><span>}`</span><span>)</span></span>
-<span class="line"><span>      const</span><span> discuss</span><span> =</span><span> await</span><span> discussClient.</span><span>createDiscussion</span><span>(</span></span>
-<span class="line"><span>          pageData.title,</span></span>
-<span class="line"><span>          pageData.url,</span></span>
-<span class="line"><span>          process.env.</span><span>VITE_GITHUB_DISCUSS_TYPE_ID</span></span>
-<span class="line"><span>      )</span></span>
-<span class="line"><span>      if</span><span> (discuss) {</span></span>
-<span class="line"><span>        pageData.frontmatter.discussion </span><span>=</span><span> discuss</span></span>
-<span class="line"><span>      } </span><span>else</span><span> {</span></span>
-<span class="line"><span>        throw</span><span> new</span><span> Error</span><span>(</span><span>"创建讨论失败"</span><span>)</span></span>
-<span class="line"><span>      }</span></span>
-<span class="line"><span>    }</span></span>
-<span class="line"></span>
-<span class="line"><span>    // -------------------------</span></span>
-<span class="line"><span>    // 写回 Markdown 文件</span></span>
-<span class="line"><span>    // -------------------------</span></span>
-<span class="line"><span>    const</span><span> mdPath</span><span> =</span><span> path.</span><span>resolve</span><span>(process.</span><span>cwd</span><span>(), </span><span>'blog'</span><span>, pageData.filePath)</span></span>
-<span class="line"><span>    const</span><span> raw</span><span> =</span><span> await</span><span> fs.</span><span>readFile</span><span>(mdPath, </span><span>'utf-8'</span><span>)</span></span>
-<span class="line"></span>
-<span class="line"><span>    const</span><span> parsed</span><span> =</span><span> matter</span><span>(raw)</span></span>
-<span class="line"></span>
-<span class="line"><span>    // 写入 frontmatter</span></span>
-<span class="line"><span>    parsed.data.url </span><span>=</span><span> pageData.url</span></span>
-<span class="line"><span>    if</span><span> (pageData.frontmatter.discussion </span><span>!=</span><span> null</span><span>) parsed.data.discussion </span><span>=</span><span> pageData.frontmatter.discussion</span></span>
-<span class="line"></span>
-<span class="line"><span>    // 重新生成 md 内容</span></span>
-<span class="line"><span>    const</span><span> newContent</span><span> =</span><span> matter.</span><span>stringify</span><span>(parsed.content, parsed.data)</span></span>
-<span class="line"></span>
-<span class="line"><span>    // 写回文件</span></span>
-<span class="line"><span>    await</span><span> fs.</span><span>writeFile</span><span>(mdPath, newContent, </span><span>'utf-8'</span><span>)</span></span>
-<span class="line"><span>  },</span></span></code></pre></div><p>这里要注意重新写入数据会重新触发该文章的从 md 到 html 的构建过程。</p><h2 id="graphql-sdk" tabindex="-1">graphql sdk <a class="header-anchor" href="#graphql-sdk" aria-label="Permalink to &quot;graphql sdk&quot;">​</a></h2><p>用graphql请求数据，实际是发送一串字符串出去，不好维护 graphql语句。</p><p>于是考虑单独创建 graphql文件，有类型提示，也可以像 mssql ssms一样直接执行语句。然后通过 codegen 生成 查询的 sdk。</p></div>]]></content:encoded>
+            <content:encoded><![CDATA[<div><h1 id="前期调研">前期调研 </h1><h2 id="参考已有的项目">参考已有的项目 </h2><p>实际上这样想法已经有人实现，并且已封装成简单配置即可使用的依赖，比如 <a href="https://github.com/giscus/giscus" target="_blank" rel="noreferrer">giscus</a>。</p><p>但是分析了相关功能，其中一个功能 <code>可以不为文章创建 discussion，等到有人评论再创建 discussion</code> 让我感到疑惑。</p><p>因为使用的是静态网页，并且想要创建 <code>github discussion</code> 是需要 <code>discussion id</code> 和 <code>access_token</code> 去请求 API 的。ID 不可能说有人创建评论就重新构建静态网页然后重新写入；token 也不建议保存在静态网页，因为不论怎么混淆也是能找到的。当然 gisgus 也不是把 token 保存在前端，而是走他们自己的 <code>github bot</code> 帮你创建评论，而它讨论的 API 是可以重复调用的，我有提 <a href="https://github.com/giscus/giscus/issues/1702" target="_blank" rel="noreferrer">重复创建讨论</a> 询问了一下，确实理解是设计需要。</p><p>因为不希望自己项目的评论区随地大小便，所以我决定自己写评论模块。</p><h2 id="查看-github-graphql-和-oauth-api">查看 github graphql 和 oauth api </h2><h3 id="oauth-api">oauth api </h3><p>由于是静态网页，纯前端项目，我开始寻找有没有无需后端就能通过 oauth 并且 github 支持的协议。当然一开始找到了，是 <a href="https://github.blog/changelog/2025-07-14-pkce-support-for-oauth-and-github-app-authentication/" target="_blank" rel="noreferrer"><code>PKCE</code></a> 。</p><p>但是尝试跑通失败，最重要的一点是 github 验证不支持跨域，必须要有后端去转发请求。那这还不如正常的去走 ouath 呢。</p><p>正常走 oauth 是：</p><div><span style="color:#6a737d;font-size:12px">text</span><pre style="background-color:#f6f8fa;border-radius:6px;padding:12px 16px;overflow-x:auto;font-size:13px;line-height:1.6"><code><span><span>┌─────────┐      (1) 请求授权 (scope, client_id等)       ┌─────────────┐</span></span>
+<span><span>│         │ ─────────────────────────────────────────&gt; │             │</span></span>
+<span><span>│  前端    │                                            │   GitHub    │</span></span>
+<span><span>│ (浏览器) │ &lt;───────────────────────────────────────── │   服务器     │</span></span>
+<span><span>│         │      (2) 重定向到github的用户登录并授权页面     │             │</span></span>
+<span><span>└─────────┘                                            └─────────────┘</span></span>
+<span><span>     │                                                       │</span></span>
+<span><span>     │ (3) 重定向回前端并返回 code                              │</span></span>
+<span><span>     │ &lt;─────────────────────────────────────────────────────┘</span></span>
+<span><span>     │</span></span>
+<span><span>     │ (4) 传递 code </span></span>
+<span><span>     ▼</span></span>
+<span><span>┌─────────┐                                            ┌─────────────┐</span></span>
+<span><span>│         │      (5) 发送请求 (code + client_secret)    |			  |</span></span>
+<span><span>│         │				client_secret不能泄露			|			  |</span></span>
+<span><span>│  后端    │ ─────────────────────────────────────────&gt; │   GitHub    │</span></span>
+<span><span>│ (我们的) │                                            │   服务器     │</span></span>
+<span><span>│  服务    │ &lt;───────────────────────────────────────── │             │</span></span>
+<span><span>│         │      (6) 返回 access_token                  │             │</span></span>
+<span><span>└─────────┘                                            └─────────────┘</span></span>
+<span><span>     │</span></span>
+<span><span>     │ (7) 返回 access_token</span></span>
+<span><span>     ▼</span></span>
+<span><span>┌─────────┐</span></span>
+<span><span>│  前端    │</span></span>
+<span><span>└─────────┘</span></span></code></pre></div><h3 id="graphql">graphql </h3><p>请求数据，请求参数类似于 sql 语句，无论请求什么，请求对象固定为同一个网址，很有意思的一个设计思路。</p><p>详细信息参考 <a href="https://docs.github.com/zh/graphql/guides/using-the-graphql-api-for-discussions" target="_blank" rel="noreferrer">使用 GraphQL API 进行讨论</a></p><h2 id="后端选择">后端选择 </h2><p>选择了 cloudflare 免费的 worker</p><h1 id="具体实现">具体实现 </h1><h2 id="固定文章对应的讨论">固定文章对应的讨论 </h2><p>用户第一次评论时再创建文章对应的讨论，这个功能虽然好，但是很麻烦。</p><p>因此选择另一个方法：每有一篇新文章，就自动创建一个对应的讨论。这个写在了 vitepress 构建过程中。</p><div><span style="color:#6a737d;font-size:12px">ts</span><pre style="background-color:#f6f8fa;border-radius:6px;padding:12px 16px;overflow-x:auto;font-size:13px;line-height:1.6"><code><span><span style="color:#24292E">async </span><span style="color:#6F42C1">transformPageData</span><span style="color:#24292E">(pageData) {</span></span>
+<span><span style="color:#D73A49">    var</span><span style="color:#24292E"> baseUrl </span><span style="color:#D73A49">=</span><span style="color:#032F62"> 'https://mqnu00.github.io/blog'</span></span>
+<span><span style="color:#D73A49">    const</span><span style="color:#005CC5"> githubPath</span><span style="color:#D73A49"> =</span><span style="color:#032F62"> '/blog/'</span><span style="color:#D73A49"> +</span><span style="color:#24292E"> pageData.filePath</span></span>
+<span></span>
+<span><span style="color:#24292E">    pageData.url </span><span style="color:#D73A49">=</span><span style="color:#032F62"> `${</span><span style="color:#24292E">baseUrl</span><span style="color:#032F62">}/${</span><span style="color:#24292E">pageData</span><span style="color:#032F62">.</span><span style="color:#24292E">filePath</span><span style="color:#032F62">.</span><span style="color:#6F42C1">replace</span><span style="color:#032F62">(</span><span style="color:#032F62">'.md'</span><span style="color:#032F62">, </span><span style="color:#032F62">'.html'</span><span style="color:#032F62">)</span><span style="color:#032F62">}`</span></span>
+<span><span style="color:#6A737D">    //   配置讨论</span></span>
+<span><span style="color:#D73A49">    if</span><span style="color:#24292E">(pageData.frontmatter.discussion </span><span style="color:#D73A49">==</span><span style="color:#005CC5"> null</span><span style="color:#D73A49"> &amp;&amp;</span><span style="color:#24292E"> pageData.title </span><span style="color:#D73A49">!=</span><span style="color:#005CC5"> null</span><span style="color:#D73A49"> &amp;&amp;</span><span style="color:#24292E"> pageData.title </span><span style="color:#D73A49">!==</span><span style="color:#032F62"> ''</span><span style="color:#24292E">) {</span></span>
+<span><span style="color:#24292E">      console.</span><span style="color:#6F42C1">log</span><span style="color:#24292E">(</span><span style="color:#032F62">`创建讨论： ${</span><span style="color:#24292E">pageData</span><span style="color:#032F62">.</span><span style="color:#24292E">title</span><span style="color:#032F62">}`</span><span style="color:#24292E">)</span></span>
+<span><span style="color:#D73A49">      const</span><span style="color:#005CC5"> discuss</span><span style="color:#D73A49"> =</span><span style="color:#D73A49"> await</span><span style="color:#24292E"> discussClient.</span><span style="color:#6F42C1">createDiscussion</span><span style="color:#24292E">(</span></span>
+<span><span style="color:#24292E">          pageData.title,</span></span>
+<span><span style="color:#24292E">          pageData.url,</span></span>
+<span><span style="color:#24292E">          process.env.</span><span style="color:#005CC5">VITE_GITHUB_DISCUSS_TYPE_ID</span></span>
+<span><span style="color:#24292E">      )</span></span>
+<span><span style="color:#D73A49">      if</span><span style="color:#24292E"> (discuss) {</span></span>
+<span><span style="color:#24292E">        pageData.frontmatter.discussion </span><span style="color:#D73A49">=</span><span style="color:#24292E"> discuss</span></span>
+<span><span style="color:#24292E">      } </span><span style="color:#D73A49">else</span><span style="color:#24292E"> {</span></span>
+<span><span style="color:#D73A49">        throw</span><span style="color:#D73A49"> new</span><span style="color:#6F42C1"> Error</span><span style="color:#24292E">(</span><span style="color:#032F62">"创建讨论失败"</span><span style="color:#24292E">)</span></span>
+<span><span style="color:#24292E">      }</span></span>
+<span><span style="color:#24292E">    }</span></span>
+<span></span>
+<span><span style="color:#6A737D">    // -------------------------</span></span>
+<span><span style="color:#6A737D">    // 写回 Markdown 文件</span></span>
+<span><span style="color:#6A737D">    // -------------------------</span></span>
+<span><span style="color:#D73A49">    const</span><span style="color:#005CC5"> mdPath</span><span style="color:#D73A49"> =</span><span style="color:#24292E"> path.</span><span style="color:#6F42C1">resolve</span><span style="color:#24292E">(process.</span><span style="color:#6F42C1">cwd</span><span style="color:#24292E">(), </span><span style="color:#032F62">'blog'</span><span style="color:#24292E">, pageData.filePath)</span></span>
+<span><span style="color:#D73A49">    const</span><span style="color:#005CC5"> raw</span><span style="color:#D73A49"> =</span><span style="color:#D73A49"> await</span><span style="color:#24292E"> fs.</span><span style="color:#6F42C1">readFile</span><span style="color:#24292E">(mdPath, </span><span style="color:#032F62">'utf-8'</span><span style="color:#24292E">)</span></span>
+<span></span>
+<span><span style="color:#D73A49">    const</span><span style="color:#005CC5"> parsed</span><span style="color:#D73A49"> =</span><span style="color:#6F42C1"> matter</span><span style="color:#24292E">(raw)</span></span>
+<span></span>
+<span><span style="color:#6A737D">    // 写入 frontmatter</span></span>
+<span><span style="color:#24292E">    parsed.data.url </span><span style="color:#D73A49">=</span><span style="color:#24292E"> pageData.url</span></span>
+<span><span style="color:#D73A49">    if</span><span style="color:#24292E"> (pageData.frontmatter.discussion </span><span style="color:#D73A49">!=</span><span style="color:#005CC5"> null</span><span style="color:#24292E">) parsed.data.discussion </span><span style="color:#D73A49">=</span><span style="color:#24292E"> pageData.frontmatter.discussion</span></span>
+<span></span>
+<span><span style="color:#6A737D">    // 重新生成 md 内容</span></span>
+<span><span style="color:#D73A49">    const</span><span style="color:#005CC5"> newContent</span><span style="color:#D73A49"> =</span><span style="color:#24292E"> matter.</span><span style="color:#6F42C1">stringify</span><span style="color:#24292E">(parsed.content, parsed.data)</span></span>
+<span></span>
+<span><span style="color:#6A737D">    // 写回文件</span></span>
+<span><span style="color:#D73A49">    await</span><span style="color:#24292E"> fs.</span><span style="color:#6F42C1">writeFile</span><span style="color:#24292E">(mdPath, newContent, </span><span style="color:#032F62">'utf-8'</span><span style="color:#24292E">)</span></span>
+<span><span style="color:#24292E">  },</span></span></code></pre></div><p>这里要注意重新写入数据会重新触发该文章的从 md 到 html 的构建过程。</p><h2 id="graphql-sdk">graphql sdk </h2><p>用graphql请求数据，实际是发送一串字符串出去，不好维护 graphql语句。</p><p>于是考虑单独创建 graphql文件，有类型提示，也可以像 mssql ssms一样直接执行语句。然后通过 codegen 生成 查询的 sdk。</p></div>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[VitePress中的Markdown扩展功能]]></title>
-            <link>https://mqnu00.github.io/blog//posts/vitepress/markdown-extensions.html</link>
-            <guid isPermaLink="false">https://mqnu00.github.io/blog//posts/vitepress/markdown-extensions.html</guid>
+            <link>https://mqnu00.github.io/blog/posts/vitepress/markdown-extensions.html</link>
+            <guid isPermaLink="false">https://mqnu00.github.io/blog/posts/vitepress/markdown-extensions.html</guid>
             <pubDate>Fri, 17 Jan 2025 00:00:00 GMT</pubDate>
-            <content:encoded><![CDATA[<div><h1 id="vitepress中的markdown扩展功能" tabindex="-1">VitePress中的Markdown扩展功能 <a class="header-anchor" href="#vitepress中的markdown扩展功能" aria-label="Permalink to &quot;VitePress中的Markdown扩展功能&quot;">​</a></h1><p>在使用VitePress搭建博客时，了解其内置的Markdown扩展功能是非常有帮助的。本文将详细介绍一些常用的扩展功能。</p><h2 id="语法高亮" tabindex="-1">语法高亮 <a class="header-anchor" href="#语法高亮" aria-label="Permalink to &quot;语法高亮&quot;">​</a></h2><p>VitePress提供由 <a href="https://github.com/shikijs/shiki" target="_blank" rel="noreferrer">Shiki</a> 驱动的语法高亮，还具有行高亮等附加功能：</p><p><strong>示例代码</strong></p><div class="language-md vp-adaptive-theme"><span class="lang">md</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>```js{4}</span></span>
-<span class="line"><span>export</span><span> default</span><span> {</span></span>
-<span class="line"><span>  data</span><span> () {</span></span>
-<span class="line"><span>    return</span><span> {</span></span>
-<span class="line"><span>      msg: </span><span>'Highlighted!'</span></span>
-<span class="line"><span>    }</span></span>
-<span class="line"><span>  }</span></span>
-<span class="line"><span>}</span></span>
-<span class="line"><span>```</span></span></code></pre></div><p><strong>Output</strong></p><div class="language-js vp-adaptive-theme"><span class="lang">js</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>export</span><span> default</span><span> {</span></span>
-<span class="line"><span>  data</span><span> () {</span></span>
-<span class="line"><span>    return</span><span> {</span></span>
-<span class="line highlighted"><span>      msg: </span><span>'Highlighted!'</span></span>
-<span class="line"><span>    }</span></span>
-<span class="line"><span>  }</span></span>
-<span class="line"><span>}</span></span></code></pre></div><h2 id="custom-containers" tabindex="-1">Custom Containers <a class="header-anchor" href="#custom-containers" aria-label="Permalink to &quot;Custom Containers&quot;">​</a></h2><p><strong>Input</strong></p><div class="language-md vp-adaptive-theme"><span class="lang">md</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>::: info</span></span>
-<span class="line"><span>This is an info box.</span></span>
-<span class="line"><span>:::</span></span>
-<span class="line"></span>
-<span class="line"><span>::: tip</span></span>
-<span class="line"><span>This is a tip.</span></span>
-<span class="line"><span>:::</span></span>
-<span class="line"></span>
-<span class="line"><span>::: warning</span></span>
-<span class="line"><span>This is a warning.</span></span>
-<span class="line"><span>:::</span></span>
-<span class="line"></span>
-<span class="line"><span>::: danger</span></span>
-<span class="line"><span>This is a dangerous warning.</span></span>
-<span class="line"><span>:::</span></span>
-<span class="line"></span>
-<span class="line"><span>::: details</span></span>
-<span class="line"><span>This is a details block.</span></span>
-<span class="line"><span>:::</span></span></code></pre></div><p><strong>Output</strong></p><div class="info custom-block"><p class="custom-block-title">INFO</p><p>This is an info box.</p></div><div class="tip custom-block"><p class="custom-block-title">TIP</p><p>This is a tip.</p></div><div class="warning custom-block"><p class="custom-block-title">WARNING</p><p>This is a warning.</p></div><div class="danger custom-block"><p class="custom-block-title">DANGER</p><p>This is a dangerous warning.</p></div><details class="details custom-block"><summary>Details</summary><p>This is a details block.</p></details><h2 id="more" tabindex="-1">More <a class="header-anchor" href="#more" aria-label="Permalink to &quot;More&quot;">​</a></h2><p>Check out the documentation for the <a href="https://vitepress.dev/guide/markdown" target="_blank" rel="noreferrer">full list of markdown extensions</a>.</p></div>]]></content:encoded>
+            <content:encoded><![CDATA[<div><h1 id="vitepress中的markdown扩展功能">VitePress中的Markdown扩展功能 </h1><p>在使用VitePress搭建博客时，了解其内置的Markdown扩展功能是非常有帮助的。本文将详细介绍一些常用的扩展功能。</p><h2 id="语法高亮">语法高亮 </h2><p>VitePress提供由 <a href="https://github.com/shikijs/shiki" target="_blank" rel="noreferrer">Shiki</a> 驱动的语法高亮，还具有行高亮等附加功能：</p><p><strong>示例代码</strong></p><div><span style="color:#6a737d;font-size:12px">md</span><pre style="background-color:#f6f8fa;border-radius:6px;padding:12px 16px;overflow-x:auto;font-size:13px;line-height:1.6"><code><span><span style="color:#24292E">```js{4}</span></span>
+<span><span style="color:#D73A49">export</span><span style="color:#D73A49"> default</span><span style="color:#24292E"> {</span></span>
+<span><span style="color:#6F42C1">  data</span><span style="color:#24292E"> () {</span></span>
+<span><span style="color:#D73A49">    return</span><span style="color:#24292E"> {</span></span>
+<span><span style="color:#24292E">      msg: </span><span style="color:#032F62">'Highlighted!'</span></span>
+<span><span style="color:#24292E">    }</span></span>
+<span><span style="color:#24292E">  }</span></span>
+<span><span style="color:#24292E">}</span></span>
+<span><span style="color:#24292E">```</span></span></code></pre></div><p><strong>Output</strong></p><div><span style="color:#6a737d;font-size:12px">js</span><pre style="background-color:#f6f8fa;border-radius:6px;padding:12px 16px;overflow-x:auto;font-size:13px;line-height:1.6"><code><span><span style="color:#D73A49">export</span><span style="color:#D73A49"> default</span><span style="color:#24292E"> {</span></span>
+<span><span style="color:#6F42C1">  data</span><span style="color:#24292E"> () {</span></span>
+<span><span style="color:#D73A49">    return</span><span style="color:#24292E"> {</span></span>
+<span><span style="color:#24292E">      msg: </span><span style="color:#032F62">'Highlighted!'</span></span>
+<span><span style="color:#24292E">    }</span></span>
+<span><span style="color:#24292E">  }</span></span>
+<span><span style="color:#24292E">}</span></span></code></pre></div><h2 id="custom-containers">Custom Containers </h2><p><strong>Input</strong></p><div><span style="color:#6a737d;font-size:12px">md</span><pre style="background-color:#f6f8fa;border-radius:6px;padding:12px 16px;overflow-x:auto;font-size:13px;line-height:1.6"><code><span><span style="color:#24292E">::: info</span></span>
+<span><span style="color:#24292E">This is an info box.</span></span>
+<span><span style="color:#24292E">:::</span></span>
+<span></span>
+<span><span style="color:#24292E">::: tip</span></span>
+<span><span style="color:#24292E">This is a tip.</span></span>
+<span><span style="color:#24292E">:::</span></span>
+<span></span>
+<span><span style="color:#24292E">::: warning</span></span>
+<span><span style="color:#24292E">This is a warning.</span></span>
+<span><span style="color:#24292E">:::</span></span>
+<span></span>
+<span><span style="color:#24292E">::: danger</span></span>
+<span><span style="color:#24292E">This is a dangerous warning.</span></span>
+<span><span style="color:#24292E">:::</span></span>
+<span></span>
+<span><span style="color:#24292E">::: details</span></span>
+<span><span style="color:#24292E">This is a details block.</span></span>
+<span><span style="color:#24292E">:::</span></span></code></pre></div><p><strong>Output</strong></p><div style="border-left:4px solid;border-radius:4px;padding:8px 16px;border-color:#3b82f6;background-color:#f3f7fb"><p style="font-weight:600;margin:8px 0">INFO</p><p>This is an info box.</p></div><div style="border-left:4px solid;border-radius:4px;padding:8px 16px;border-color:#42b983;background-color:#f3f9f5"><p style="font-weight:600;margin:8px 0">TIP</p><p>This is a tip.</p></div><div style="border-left:4px solid;border-radius:4px;padding:8px 16px;border-color:#e7c000;background-color:#fff8e6"><p style="font-weight:600;margin:8px 0">WARNING</p><p>This is a warning.</p></div><div style="border-left:4px solid;border-radius:4px;padding:8px 16px;border-color:#cc0000;background-color:#fdf3f3"><p style="font-weight:600;margin:8px 0">DANGER</p><p>This is a dangerous warning.</p></div><details><summary>Details</summary><p>This is a details block.</p></details><h2 id="more">More </h2><p>Check out the documentation for the <a href="https://vitepress.dev/guide/markdown" target="_blank" rel="noreferrer">full list of markdown extensions</a>.</p></div>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[我的第一篇博客]]></title>
-            <link>https://mqnu00.github.io/blog//posts/vitepress/my-first-post.html</link>
-            <guid isPermaLink="false">https://mqnu00.github.io/blog//posts/vitepress/my-first-post.html</guid>
+            <link>https://mqnu00.github.io/blog/posts/vitepress/my-first-post.html</link>
+            <guid isPermaLink="false">https://mqnu00.github.io/blog/posts/vitepress/my-first-post.html</guid>
             <pubDate>Wed, 15 Jan 2025 00:00:00 GMT</pubDate>
-            <content:encoded><![CDATA[<div><h1 id="我的第一篇博客" tabindex="-1">我的第一篇博客 <a class="header-anchor" href="#我的第一篇博客" aria-label="Permalink to &quot;我的第一篇博客&quot;">​</a></h1><h2 id="为什么选择vitepress" tabindex="-1">为什么选择VitePress <a class="header-anchor" href="#为什么选择vitepress" aria-label="Permalink to &quot;为什么选择VitePress&quot;">​</a></h2><p>VitePress是一个极简的静态站点生成器，它基于Vue 3和Vite，具有以下优点：</p><ul><li>快速的热更新</li><li>极小的打包体积</li><li>优秀的Markdown支持</li><li>友好的主题定制能力</li></ul><h2 id="未来规划" tabindex="-1">未来规划 <a class="header-anchor" href="#未来规划" aria-label="Permalink to &quot;未来规划&quot;">​</a></h2><p>在未来的博客中，我会分享：</p><ul><li>前端技术的最新动态</li><li>Vue.js开发实践</li><li>性能优化技巧</li><li>工程化经验</li></ul><p>希望我的分享对你有所帮助！</p></div>]]></content:encoded>
+            <content:encoded><![CDATA[<div><h1 id="我的第一篇博客">我的第一篇博客 </h1><h2 id="为什么选择vitepress">为什么选择VitePress </h2><p>VitePress是一个极简的静态站点生成器，它基于Vue 3和Vite，具有以下优点：</p><ul><li>快速的热更新</li><li>极小的打包体积</li><li>优秀的Markdown支持</li><li>友好的主题定制能力</li></ul><h2 id="未来规划">未来规划 </h2><p>在未来的博客中，我会分享：</p><ul><li>前端技术的最新动态</li><li>Vue.js开发实践</li><li>性能优化技巧</li><li>工程化经验</li></ul><p>希望我的分享对你有所帮助！</p></div>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[VitePress运行时API详解]]></title>
-            <link>https://mqnu00.github.io/blog//posts/vitepress/runtime-api-examples.html</link>
-            <guid isPermaLink="false">https://mqnu00.github.io/blog//posts/vitepress/runtime-api-examples.html</guid>
+            <link>https://mqnu00.github.io/blog/posts/vitepress/runtime-api-examples.html</link>
+            <guid isPermaLink="false">https://mqnu00.github.io/blog/posts/vitepress/runtime-api-examples.html</guid>
             <pubDate>Sat, 18 Jan 2025 00:00:00 GMT</pubDate>
-            <content:encoded><![CDATA[<div><h1 id="vitepress运行时api详解" tabindex="-1">VitePress运行时API详解 <a class="header-anchor" href="#vitepress运行时api详解" aria-label="Permalink to &quot;VitePress运行时API详解&quot;">​</a></h1><p>本文将详细介绍VitePress提供的运行时API，这些API可以帮助我们更好地控制页面行为和获取站点数据。</p><h2 id="usedata-api" tabindex="-1">useData() API <a class="header-anchor" href="#usedata-api" aria-label="Permalink to &quot;useData() API&quot;">​</a></h2><p><code>useData()</code> 是VitePress提供的主要运行时API，可用于访问当前页面的站点、主题和页面数据。它在 <code>.md</code> 和 <code>.vue</code> 文件中都能正常工作：</p><div class="language-md vp-adaptive-theme"><span class="lang">md</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>&lt;script setup&gt;</span></span>
-<span class="line"><span>import { useData } from 'vitepress'</span></span>
-<span class="line"></span>
-<span class="line"><span>const { theme, page, frontmatter } = useData()</span></span>
-<span class="line"><span>&lt;/script&gt;</span></span>
-<span class="line"></span>
-<span class="line"><span>## 结果</span></span>
-<span class="line"></span>
-<span class="line"><span>### 主题数据</span></span>
-<span class="line"><span>&lt;pre&gt;{{ theme }}&lt;/pre&gt;</span></span>
-<span class="line"></span>
-<span class="line"><span>### 页面数据</span></span>
-<span class="line"><span>&lt;pre&gt;{{ page }}&lt;/pre&gt;</span></span>
-<span class="line"></span>
-<span class="line"><span>### 页面Frontmatter</span></span>
-<span class="line"><span>&lt;pre&gt;{{ frontmatter }}&lt;/pre&gt;</span></span></code></pre></div><h2 id="实际结果" tabindex="-1">实际结果 <a class="header-anchor" href="#实际结果" aria-label="Permalink to &quot;实际结果&quot;">​</a></h2><h3 id="主题数据" tabindex="-1">主题数据 <a class="header-anchor" href="#主题数据" aria-label="Permalink to &quot;主题数据&quot;">​</a></h3><pre>{
+            <content:encoded><![CDATA[<div><h1 id="vitepress运行时api详解">VitePress运行时API详解 </h1><p>本文将详细介绍VitePress提供的运行时API，这些API可以帮助我们更好地控制页面行为和获取站点数据。</p><h2 id="usedata-api">useData() API </h2><p><code>useData()</code> 是VitePress提供的主要运行时API，可用于访问当前页面的站点、主题和页面数据。它在 <code>.md</code> 和 <code>.vue</code> 文件中都能正常工作：</p><div><span style="color:#6a737d;font-size:12px">md</span><pre style="background-color:#f6f8fa;border-radius:6px;padding:12px 16px;overflow-x:auto;font-size:13px;line-height:1.6"><code><span><span style="color:#24292E">&lt;script setup&gt;</span></span>
+<span><span style="color:#24292E">import { useData } from 'vitepress'</span></span>
+<span></span>
+<span><span style="color:#24292E">const { theme, page, frontmatter } = useData()</span></span>
+<span><span style="color:#24292E">&lt;/script&gt;</span></span>
+<span></span>
+<span><span style="color:#005CC5">## 结果</span></span>
+<span></span>
+<span><span style="color:#005CC5">### 主题数据</span></span>
+<span><span style="color:#24292E">&lt;pre&gt;{{ theme }}&lt;/pre&gt;</span></span>
+<span></span>
+<span><span style="color:#005CC5">### 页面数据</span></span>
+<span><span style="color:#24292E">&lt;pre&gt;{{ page }}&lt;/pre&gt;</span></span>
+<span></span>
+<span><span style="color:#005CC5">### 页面Frontmatter</span></span>
+<span><span style="color:#24292E">&lt;pre&gt;{{ frontmatter }}&lt;/pre&gt;</span></span></code></pre></div><h2 id="实际结果">实际结果 </h2><h3 id="主题数据">主题数据 </h3><pre>{
   "search": {
     "provider": "local",
     "options": {}
@@ -499,7 +499,7 @@
     "prev": false,
     "next": false
   }
-}</pre><h3 id="页面数据" tabindex="-1">页面数据 <a class="header-anchor" href="#页面数据" aria-label="Permalink to &quot;页面数据&quot;">​</a></h3><pre>{
+}</pre><h3 id="页面数据">页面数据 </h3><pre>{
   "title": "VitePress运行时API详解",
   "description": "",
   "frontmatter": {
@@ -565,7 +565,7 @@
     ]
   },
   "url": "https://mqnu00.github.io/blog/posts/vitepress/runtime-api-examples.html"
-}</pre><h3 id="页面frontmatter" tabindex="-1">页面Frontmatter <a class="header-anchor" href="#页面frontmatter" aria-label="Permalink to &quot;页面Frontmatter&quot;">​</a></h3><pre>{
+}</pre><h3 id="页面frontmatter">页面Frontmatter </h3><pre>{
   "title": "VitePress运行时API详解",
   "date": "2025-01-18T00:00:00.000Z",
   "author": "广习习",
@@ -583,61 +583,61 @@
     "url": "https://github.com/mqnu00/blog/discussions/62",
     "createdAt": "2026-04-03T05:22:56Z"
   }
-}</pre><h2 id="应用场景" tabindex="-1">应用场景 <a class="header-anchor" href="#应用场景" aria-label="Permalink to &quot;应用场景&quot;">​</a></h2><p><code>useData()</code> API可以用于：</p><ul><li>根据站点配置动态渲染内容</li><li>访问页面级的元数据</li><li>在自定义组件中访问VitePress的内部数据</li></ul><p>更多运行时API的详细信息，请查看 <a href="https://vitepress.dev/reference/runtime-api#usedata" target="_blank" rel="noreferrer">官方文档</a>。</p></div>]]></content:encoded>
+}</pre><h2 id="应用场景">应用场景 </h2><p><code>useData()</code> API可以用于：</p><ul><li>根据站点配置动态渲染内容</li><li>访问页面级的元数据</li><li>在自定义组件中访问VitePress的内部数据</li></ul><p>更多运行时API的详细信息，请查看 <a href="https://vitepress.dev/reference/runtime-api#usedata" target="_blank" rel="noreferrer">官方文档</a>。</p></div>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[统一白天和黑夜主题]]></title>
-            <link>https://mqnu00.github.io/blog//posts/vitepress/unified-theme-for-day-and-night.html</link>
-            <guid isPermaLink="false">https://mqnu00.github.io/blog//posts/vitepress/unified-theme-for-day-and-night.html</guid>
+            <link>https://mqnu00.github.io/blog/posts/vitepress/unified-theme-for-day-and-night.html</link>
+            <guid isPermaLink="false">https://mqnu00.github.io/blog/posts/vitepress/unified-theme-for-day-and-night.html</guid>
             <pubDate>Wed, 13 May 2026 07:49:00 GMT</pubDate>
-            <content:encoded><![CDATA[<div><h1 id="存在问题" tabindex="-1">存在问题 <a class="header-anchor" href="#存在问题" aria-label="Permalink to &quot;存在问题&quot;">​</a></h1><p>vitepress 切换白天和黑夜主题，在 vue 文件想要感知到，可以通过以下代码</p><div class="language-ts vp-adaptive-theme"><span class="lang">ts</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>import</span><span> { useData } </span><span>from</span><span> "vitepress"</span><span>;</span></span>
-<span class="line"></span>
-<span class="line"><span>const</span><span> { </span><span>isDark</span><span> } </span><span>=</span><span> useData</span><span>();</span></span></code></pre></div><p>naive-ui 设置主题时，也要监视 <code>isDark</code> 实现主题切换。</p><p>但是存在问题：必须确认已经在浏览器环境了，才能获取到 <code>isDark</code> 环境变量</p><h1 id="切换-naive-ui-主题" tabindex="-1">切换 naive-ui 主题 <a class="header-anchor" href="#切换-naive-ui-主题" aria-label="Permalink to &quot;切换 naive-ui 主题&quot;">​</a></h1><p>naive-ui 本身自带 白天主题和黑夜主题</p><div class="language-ts vp-adaptive-theme"><span class="lang">ts</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>import</span><span> {darkTheme} </span><span>from</span><span> "naive-ui"</span><span>;</span></span>
-<span class="line"><span>const</span><span> theme</span><span> =</span><span> computed</span><span>(() </span><span>=&gt;</span><span> {</span></span>
-<span class="line"><span>  if</span><span> (isClient.value) {</span></span>
-<span class="line"><span>    return</span><span> isDark.value </span><span>?</span><span> darkTheme </span><span>:</span><span> undefined</span><span>;</span></span>
-<span class="line"><span>  }</span></span>
-<span class="line"><span>  return</span><span> null</span><span>;</span></span>
-<span class="line"><span>});</span></span></code></pre></div><h1 id="对于自定义的颜色想要切换" tabindex="-1">对于自定义的颜色想要切换 <a class="header-anchor" href="#对于自定义的颜色想要切换" aria-label="Permalink to &quot;对于自定义的颜色想要切换&quot;">​</a></h1><div class="language-ts vp-adaptive-theme"><span class="lang">ts</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>const</span><span> cssVars</span><span> =</span><span> computed</span><span>(() </span><span>=&gt;</span><span> {</span></span>
-<span class="line"><span>  if</span><span> (isClient.value) {</span></span>
-<span class="line"><span>    return</span><span> {</span></span>
-<span class="line"><span>      "--hint-bg-color"</span><span>: isDark.value</span></span>
-<span class="line"><span>        ?</span><span> "rgb(91, 91, 91)"</span></span>
-<span class="line"><span>        :</span><span> "rgb(233, 233, 238)"</span><span>,</span></span>
-<span class="line"><span>      "--discuss-bg-color"</span><span>: isDark.value</span></span>
-<span class="line"><span>        ?</span><span> "rgb(0, 0, 0)"</span></span>
-<span class="line"><span>        :</span><span> "rgb(255, 255, 255)"</span><span>,</span></span>
-<span class="line"><span>      "--hint-content-bg-hover"</span><span>: isDark.value</span></span>
-<span class="line"><span>        ?</span><span> "rgb(95, 95, 95)"</span></span>
-<span class="line"><span>        :</span><span> "rgb(233, 233, 238)"</span><span>,</span></span>
-<span class="line"><span>    };</span></span>
-<span class="line"><span>  }</span></span>
-<span class="line"><span>  return</span><span> null</span><span>;</span></span>
-<span class="line"><span>});</span></span></code></pre></div></div>]]></content:encoded>
+            <content:encoded><![CDATA[<div><h1 id="存在问题">存在问题 </h1><p>vitepress 切换白天和黑夜主题，在 vue 文件想要感知到，可以通过以下代码</p><div><span style="color:#6a737d;font-size:12px">ts</span><pre style="background-color:#f6f8fa;border-radius:6px;padding:12px 16px;overflow-x:auto;font-size:13px;line-height:1.6"><code><span><span style="color:#D73A49">import</span><span style="color:#24292E"> { useData } </span><span style="color:#D73A49">from</span><span style="color:#032F62"> "vitepress"</span><span style="color:#24292E">;</span></span>
+<span></span>
+<span><span style="color:#D73A49">const</span><span style="color:#24292E"> { </span><span style="color:#005CC5">isDark</span><span style="color:#24292E"> } </span><span style="color:#D73A49">=</span><span style="color:#6F42C1"> useData</span><span style="color:#24292E">();</span></span></code></pre></div><p>naive-ui 设置主题时，也要监视 <code>isDark</code> 实现主题切换。</p><p>但是存在问题：必须确认已经在浏览器环境了，才能获取到 <code>isDark</code> 环境变量</p><h1 id="切换-naive-ui-主题">切换 naive-ui 主题 </h1><p>naive-ui 本身自带 白天主题和黑夜主题</p><div><span style="color:#6a737d;font-size:12px">ts</span><pre style="background-color:#f6f8fa;border-radius:6px;padding:12px 16px;overflow-x:auto;font-size:13px;line-height:1.6"><code><span><span style="color:#D73A49">import</span><span style="color:#24292E"> {darkTheme} </span><span style="color:#D73A49">from</span><span style="color:#032F62"> "naive-ui"</span><span style="color:#24292E">;</span></span>
+<span><span style="color:#D73A49">const</span><span style="color:#005CC5"> theme</span><span style="color:#D73A49"> =</span><span style="color:#6F42C1"> computed</span><span style="color:#24292E">(() </span><span style="color:#D73A49">=&gt;</span><span style="color:#24292E"> {</span></span>
+<span><span style="color:#D73A49">  if</span><span style="color:#24292E"> (isClient.value) {</span></span>
+<span><span style="color:#D73A49">    return</span><span style="color:#24292E"> isDark.value </span><span style="color:#D73A49">?</span><span style="color:#24292E"> darkTheme </span><span style="color:#D73A49">:</span><span style="color:#005CC5"> undefined</span><span style="color:#24292E">;</span></span>
+<span><span style="color:#24292E">  }</span></span>
+<span><span style="color:#D73A49">  return</span><span style="color:#005CC5"> null</span><span style="color:#24292E">;</span></span>
+<span><span style="color:#24292E">});</span></span></code></pre></div><h1 id="对于自定义的颜色想要切换">对于自定义的颜色想要切换 </h1><div><span style="color:#6a737d;font-size:12px">ts</span><pre style="background-color:#f6f8fa;border-radius:6px;padding:12px 16px;overflow-x:auto;font-size:13px;line-height:1.6"><code><span><span style="color:#D73A49">const</span><span style="color:#005CC5"> cssVars</span><span style="color:#D73A49"> =</span><span style="color:#6F42C1"> computed</span><span style="color:#24292E">(() </span><span style="color:#D73A49">=&gt;</span><span style="color:#24292E"> {</span></span>
+<span><span style="color:#D73A49">  if</span><span style="color:#24292E"> (isClient.value) {</span></span>
+<span><span style="color:#D73A49">    return</span><span style="color:#24292E"> {</span></span>
+<span><span style="color:#032F62">      "--hint-bg-color"</span><span style="color:#24292E">: isDark.value</span></span>
+<span><span style="color:#D73A49">        ?</span><span style="color:#032F62"> "rgb(91, 91, 91)"</span></span>
+<span><span style="color:#D73A49">        :</span><span style="color:#032F62"> "rgb(233, 233, 238)"</span><span style="color:#24292E">,</span></span>
+<span><span style="color:#032F62">      "--discuss-bg-color"</span><span style="color:#24292E">: isDark.value</span></span>
+<span><span style="color:#D73A49">        ?</span><span style="color:#032F62"> "rgb(0, 0, 0)"</span></span>
+<span><span style="color:#D73A49">        :</span><span style="color:#032F62"> "rgb(255, 255, 255)"</span><span style="color:#24292E">,</span></span>
+<span><span style="color:#032F62">      "--hint-content-bg-hover"</span><span style="color:#24292E">: isDark.value</span></span>
+<span><span style="color:#D73A49">        ?</span><span style="color:#032F62"> "rgb(95, 95, 95)"</span></span>
+<span><span style="color:#D73A49">        :</span><span style="color:#032F62"> "rgb(233, 233, 238)"</span><span style="color:#24292E">,</span></span>
+<span><span style="color:#24292E">    };</span></span>
+<span><span style="color:#24292E">  }</span></span>
+<span><span style="color:#D73A49">  return</span><span style="color:#005CC5"> null</span><span style="color:#24292E">;</span></span>
+<span><span style="color:#24292E">});</span></span></code></pre></div></div>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[VitePress使用技巧]]></title>
-            <link>https://mqnu00.github.io/blog//posts/vitepress/vitepress-tips.html</link>
-            <guid isPermaLink="false">https://mqnu00.github.io/blog//posts/vitepress/vitepress-tips.html</guid>
+            <link>https://mqnu00.github.io/blog/posts/vitepress/vitepress-tips.html</link>
+            <guid isPermaLink="false">https://mqnu00.github.io/blog/posts/vitepress/vitepress-tips.html</guid>
             <pubDate>Thu, 16 Jan 2025 00:00:00 GMT</pubDate>
-            <content:encoded><![CDATA[<div><h1 id="vitepress使用技巧" tabindex="-1">VitePress使用技巧 <a class="header-anchor" href="#vitepress使用技巧" aria-label="Permalink to &quot;VitePress使用技巧&quot;">​</a></h1><p>在这篇文章中，我想分享一些使用VitePress的实用技巧。</p><h2 id="markdown扩展功能" tabindex="-1">Markdown扩展功能 <a class="header-anchor" href="#markdown扩展功能" aria-label="Permalink to &quot;Markdown扩展功能&quot;">​</a></h2><p>VitePress提供了丰富的Markdown扩展功能：</p><h3 id="代码块高亮" tabindex="-1">代码块高亮 <a class="header-anchor" href="#代码块高亮" aria-label="Permalink to &quot;代码块高亮&quot;">​</a></h3><div class="language- vp-adaptive-theme"><span class="lang"></span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>```js</span></span>
-<span class="line"><span>export default {</span></span>
-<span class="line"><span>  name: "MyComponent",</span></span>
-<span class="line"><span>  data() {</span></span>
-<span class="line"><span>    return {</span></span>
-<span class="line"><span>      msg: "Hello VitePress!"</span></span>
-<span class="line"><span>    }</span></span>
-<span class="line"><span>  }</span></span>
-<span class="line"><span>}</span></span>
-<span class="line"><span>```</span></span></code></pre></div><h3 id="自定义容器" tabindex="-1">自定义容器 <a class="header-anchor" href="#自定义容器" aria-label="Permalink to &quot;自定义容器&quot;">​</a></h3><div class="tip custom-block"><p class="custom-block-title">TIP</p><p>这是一个提示信息。</p></div><div class="warning custom-block"><p class="custom-block-title">WARNING</p><p>这是一个警告信息。</p></div><h3 id="代码行高亮" tabindex="-1">代码行高亮 <a class="header-anchor" href="#代码行高亮" aria-label="Permalink to &quot;代码行高亮&quot;">​</a></h3><div class="language- vp-adaptive-theme"><span class="lang"></span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>```js{4}</span></span>
-<span class="line"><span>export default {</span></span>
-<span class="line"><span>  data() {</span></span>
-<span class="line"><span>    return {</span></span>
-<span class="line"><span>      msg: "Highlighted!"</span></span>
-<span class="line"><span>    }</span></span>
-<span class="line"><span>  }</span></span>
-<span class="line"><span>}</span></span>
-<span class="line"><span>```</span></span></code></pre></div><h2 id="主题定制" tabindex="-1">主题定制 <a class="header-anchor" href="#主题定制" aria-label="Permalink to &quot;主题定制&quot;">​</a></h2><p>VitePress允许你通过CSS变量来定制主题样式，这使得个性化变得非常简单。</p><p>希望这些技巧对你有帮助！</p></div>]]></content:encoded>
+            <content:encoded><![CDATA[<div><h1 id="vitepress使用技巧">VitePress使用技巧 </h1><p>在这篇文章中，我想分享一些使用VitePress的实用技巧。</p><h2 id="markdown扩展功能">Markdown扩展功能 </h2><p>VitePress提供了丰富的Markdown扩展功能：</p><h3 id="代码块高亮">代码块高亮 </h3><div><span style="color:#6a737d;font-size:12px"></span><pre style="background-color:#f6f8fa;border-radius:6px;padding:12px 16px;overflow-x:auto;font-size:13px;line-height:1.6"><code><span><span>```js</span></span>
+<span><span>export default {</span></span>
+<span><span>  name: "MyComponent",</span></span>
+<span><span>  data() {</span></span>
+<span><span>    return {</span></span>
+<span><span>      msg: "Hello VitePress!"</span></span>
+<span><span>    }</span></span>
+<span><span>  }</span></span>
+<span><span>}</span></span>
+<span><span>```</span></span></code></pre></div><h3 id="自定义容器">自定义容器 </h3><div style="border-left:4px solid;border-radius:4px;padding:8px 16px;border-color:#42b983;background-color:#f3f9f5"><p style="font-weight:600;margin:8px 0">TIP</p><p>这是一个提示信息。</p></div><div style="border-left:4px solid;border-radius:4px;padding:8px 16px;border-color:#e7c000;background-color:#fff8e6"><p style="font-weight:600;margin:8px 0">WARNING</p><p>这是一个警告信息。</p></div><h3 id="代码行高亮">代码行高亮 </h3><div><span style="color:#6a737d;font-size:12px"></span><pre style="background-color:#f6f8fa;border-radius:6px;padding:12px 16px;overflow-x:auto;font-size:13px;line-height:1.6"><code><span><span>```js{4}</span></span>
+<span><span>export default {</span></span>
+<span><span>  data() {</span></span>
+<span><span>    return {</span></span>
+<span><span>      msg: "Highlighted!"</span></span>
+<span><span>    }</span></span>
+<span><span>  }</span></span>
+<span><span>}</span></span>
+<span><span>```</span></span></code></pre></div><h2 id="主题定制">主题定制 </h2><p>VitePress允许你通过CSS变量来定制主题样式，这使得个性化变得非常简单。</p><p>希望这些技巧对你有帮助！</p></div>]]></content:encoded>
         </item>
     </channel>
 </rss>
