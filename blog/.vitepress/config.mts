@@ -7,7 +7,7 @@ import { Feed } from 'feed'
 import fs from 'fs/promises'
 import path, { resolve } from 'node:path'
 import matter from 'gray-matter'
-import { load } from 'cheerio'
+import { load, type CheerioAPI } from 'cheerio'
 import { getGithubHistory } from './utils/github/gitHistory'
 import { generateSidebar } from './utils/sideCondig'
 import { generatePostsIndex, postsIndexPlugin } from './utils/postsIndex'
@@ -106,6 +106,87 @@ function resolveRssImageUrl(src: string, postRelDir: string, assets: Map<string,
   return `${SITE_ORIGIN}${SITE_BASE}/${relPath}`
 }
 
+// 代码块卡片样式：阅读器不会加载站点样式表，这里把关键样式内联回来
+const CODE_BLOCK_STYLE =
+  'background-color:#f6f8fa;border-radius:6px;padding:12px 16px;overflow-x:auto;font-size:13px;line-height:1.6'
+const LANG_LABEL_STYLE = 'color:#6a737d;font-size:12px'
+const CUSTOM_BLOCK_STYLES: Record<string, string> = {
+  tip: 'border-color:#42b983;background-color:#f3f9f5',
+  info: 'border-color:#3b82f6;background-color:#f3f7fb',
+  warning: 'border-color:#e7c000;background-color:#fff8e6',
+  danger: 'border-color:#cc0000;background-color:#fdf3f3',
+}
+
+/**
+ * 把构建产物里的正文清洗成适合 RSS 的 HTML。
+ *
+ * 阅读器不会加载站点的样式表（实测 feed 中既没有 <style> 也没有 stylesheet 链接），
+ * 所以正文里留下的 VitePress class 全部无效。这里做四件事：
+ *
+ * 1. 把 Shiki 的颜色变量解析成真实的 color。
+ *    产物里是 `--shiki-light:#X;--shiki-dark:#Y`，而 `--shiki-light` 只是变量声明，
+ *    必须靠站点 CSS 的 `color: var(--shiki-light)` 才生效，阅读器拿不到那段 CSS。
+ *    RSS 没有暗色模式概念，取 light 一套即可，顺带省掉 `--shiki-dark` 这部分死数据。
+ * 2. 内联代码块与提示框的关键样式，让它们在没有 CSS 的阅读器里也像卡片。
+ * 3. 去掉纯噪声：class、标题旁的空锚点、tabindex。
+ * 4. 把图片标记还原成真正的 <img>。
+ */
+function cleanRssContent(
+  $: CheerioAPI,
+  context: { postRelDir: string; assets: Map<string, string> },
+): string {
+  const doc = $('.vp-doc')
+
+  // 1. Shiki 双主题色值 → 单主题 color
+  doc.find('[style]').each((_, el) => {
+    const node = $(el)
+    const style = node.attr('style') || ''
+    const light = style.match(/--shiki-light:\s*([^;]+)/)
+    const lightBg = style.match(/--shiki-light-bg:\s*([^;]+)/)
+
+    const inlined: string[] = []
+    if (light) inlined.push(`color:${light[1].trim()}`)
+    if (lightBg) inlined.push(`background-color:${lightBg[1].trim()}`)
+
+    // 剩下的 style 都是 VitePress 的布局内部值（--vp-vh / display:flex 等），对阅读器无意义
+    if (inlined.length > 0) node.attr('style', inlined.join(';'))
+    else node.removeAttr('style')
+  })
+
+  // 2. 内联代码块与提示框样式（此时 class 还在，可以用它们做选择器）
+  doc.find('pre.shiki').attr('style', CODE_BLOCK_STYLE)
+  doc.find('span.lang').attr('style', LANG_LABEL_STYLE)
+  doc.find('div.custom-block, details.custom-block').each((_, el) => {
+    const node = $(el)
+    const type = ['tip', 'info', 'warning', 'danger'].find((name) => node.hasClass(name))
+    if (!type) return
+    node.attr(
+      'style',
+      `border-left:4px solid;border-radius:4px;padding:8px 16px;${CUSTOM_BLOCK_STYLES[type]}`,
+    )
+    node.find('.custom-block-title').attr('style', 'font-weight:600;margin:8px 0')
+  })
+
+  // 3. 去掉纯噪声
+  doc.find('button.copy').remove()
+  // 标题旁的空锚点（内容是一个零宽字符），在阅读器里只会显示成奇怪的链接
+  doc.find('a.header-anchor').remove()
+  doc.find('[tabindex]').removeAttr('tabindex')
+  // class 在阅读器里没有任何 CSS 可用，全部去掉
+  doc.find('[class]').removeAttr('class')
+
+  // 4. 还原图片
+  doc.find(`[${RSS_IMAGE_MARKER}]`).each((_, el) => {
+    const marker = $(el)
+    const src = marker.attr(RSS_IMAGE_MARKER) || ''
+    const alt = marker.attr(RSS_IMAGE_ALT_MARKER) || ''
+    const imgUrl = resolveRssImageUrl(src, context.postRelDir, context.assets)
+    marker.replaceWith(imgUrl ? `<img src="${imgUrl}" alt="${escapeAttr(alt)}">` : '')
+  })
+
+  return doc.html() || ''
+}
+
 // 构建/启动前根据 posts 目录重新生成博客文章列表页
 try {
   generatePostsIndex({ postsDir: POSTS_DIR, indexPath: POSTS_INDEX_PATH })
@@ -170,28 +251,14 @@ export default defineConfig({
 
       const filePath = path.join(pageRoot, page)
       const file = await fs.readFile(filePath, 'utf-8')
-      const { data, content } = matter(file)
+      const { data } = matter(file)
       const htmlPath = path.join(siteConfig.outDir, page.replace('.md', '.html'))
       const html = await fs.readFile(htmlPath, 'utf-8')
 
       const $ = load(html)
-      // 删除所有 class / id / style
-      // $('[class]').removeAttr('class')
-      // $('[id]').removeAttr('id')
-      $('[style]').removeAttr('style')
-      $('button.copy[title="Copy Code"]').remove()
-      // 删除不需要的标签
-      // $('script, style, link, meta, nav, footer').remove()
-
-      // 还原图片：把 markdown 图片规则注入的隐藏标记换成真正的 <img>。
-      // 标记所在位置就是图片原本的位置，因此顺序和排版都能保持。
-      const postRelDir = path.posix.dirname(page)
-      $(`.vp-doc [${RSS_IMAGE_MARKER}]`).each((_, el) => {
-        const marker = $(el)
-        const src = marker.attr(RSS_IMAGE_MARKER) || ''
-        const alt = marker.attr(RSS_IMAGE_ALT_MARKER) || ''
-        const imgUrl = resolveRssImageUrl(src, postRelDir, assetUrls)
-        marker.replaceWith(imgUrl ? `<img src="${imgUrl}" alt="${escapeAttr(alt)}">` : '')
+      const content = cleanRssContent($, {
+        postRelDir: path.posix.dirname(page),
+        assets: assetUrls,
       })
 
       if (!data.title) continue
@@ -207,7 +274,7 @@ export default defineConfig({
         id: url,
         link: url,
         description: data.description,
-        content: $('.vp-doc').html() || '',
+        content,
         date: moment(date, 'YYYY-MM-DD HH:mmZ').toDate(),
       })
     }
