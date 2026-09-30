@@ -29,6 +29,83 @@ const COPYRIGHT_YEAR = new Date().getFullYear()
 const COPYRIGHT_YEARS =
   COPYRIGHT_YEAR > SITE_START_YEAR ? `${SITE_START_YEAR}-${COPYRIGHT_YEAR}` : `${SITE_START_YEAR}`
 
+// RSS 中使用的站点地址（与 base 保持一致）
+const SITE_ORIGIN = 'https://mqnu00.github.io'
+const SITE_BASE = '/blog'
+const SITE_URL = `${SITE_ORIGIN}${SITE_BASE}/`
+
+// markdown 图片规则注入的隐藏标记属性名。
+// VitePress 的 ClientOnly 在 SSG 阶段渲染为 null，图片不会进入构建产物 HTML，
+// 因此用这个标记把图片的源路径带进产物，再由 buildEnd 还原成 RSS 可用的 <img>。
+const RSS_IMAGE_MARKER = 'data-rss-src'
+const RSS_IMAGE_ALT_MARKER = 'data-rss-alt'
+
+// 转义 HTML 属性值，避免 alt 中的引号破坏标签结构
+function escapeAttr(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+}
+
+/**
+ * 扫描构建产物的 assets 目录，建立「源文件名 → 已带 hash 的公开地址」映射。
+ *
+ * Vite 会把 markdown 中经 n-image 引用的图片产出为 `assets/<name>.<hash><ext>`。
+ * 由于构建产物 HTML 里没有任何图片引用（原因见 RSS_IMAGE_MARKER），
+ * 只能反过来用源文件名做匹配。
+ */
+async function buildAssetUrlMap(outDir: string): Promise<Map<string, string>> {
+  const map = new Map<string, string>()
+  const dup = new Set<string>()
+  const assetsDir = path.join(outDir, 'assets')
+
+  let files: string[]
+  try {
+    files = await fs.readdir(assetsDir)
+  } catch {
+    return map
+  }
+
+  for (const file of files) {
+    // 形如 ie.ClQA5gU0.png → 源文件名 ie.png
+    const matched = file.match(/^(.*)\.[A-Za-z0-9_-]{8}(\.[A-Za-z0-9]+)$/)
+    if (!matched) continue
+    const sourceName = (matched[1] + matched[2]).toLowerCase()
+    const url = `${SITE_ORIGIN}${SITE_BASE}/assets/${file}`
+    if (map.has(sourceName)) dup.add(sourceName)
+    else map.set(sourceName, url)
+  }
+
+  if (dup.size > 0) {
+    console.warn(
+      `[rss] 以下图片重名，RSS 中的图片地址可能指向错误文件，请改用唯一文件名：${[...dup].join(', ')}`,
+    )
+  }
+  return map
+}
+
+/** 把 markdown 中的图片路径解析为 RSS 中可用的绝对地址 */
+function resolveRssImageUrl(src: string, postRelDir: string, assets: Map<string, string>): string {
+  if (!src) return ''
+  // 外部图片直接使用
+  if (/^https?:\/\//i.test(src)) return src
+  // 站点绝对路径，补上域名即可
+  if (src.startsWith('/')) return `${SITE_ORIGIN}${src}`
+
+  // 相对路径：先解析成相对 blog/ 的路径，再用文件名到产物 assets 里查 hash 后的地址
+  const relPath = path.posix.normalize(path.posix.join(postRelDir, src))
+  const sourceName = path.posix.basename(relPath).toLowerCase()
+
+  const assetUrl = assets.get(sourceName)
+  if (assetUrl) return assetUrl
+
+  // 兜底：按原始相对位置拼接（可能 404，用于提醒遗漏）
+  console.warn(`[rss] 未在构建产物中找到图片 ${src}（${relPath}），RSS 中该图可能无法显示`)
+  return `${SITE_ORIGIN}${SITE_BASE}/${relPath}`
+}
+
 // 构建/启动前根据 posts 目录重新生成博客文章列表页
 try {
   generatePostsIndex({ postsDir: POSTS_DIR, indexPath: POSTS_INDEX_PATH })
@@ -57,23 +134,36 @@ export default defineConfig({
         const title = token.attrGet('title') || ''
 
         // 这里替换成 n-image
-        return `<ClientOnly><n-image src="${src}" alt="${alt}"/></ClientOnly>`
+        //
+        // 注意：ClientOnly 在 SSG 阶段会渲染为 null（VitePress 的 ClientOnly 要等
+        // onMounted 之后才渲染 slot），所以图片根本不会出现在构建产物的 HTML 里。
+        // 而 RSS 正文正是从构建产物中提取的，于是订阅里完全没有图片。
+        //
+        // 这里额外注入一个隐藏标记，把图片的「源路径」带进构建产物。
+        // 之所以用 span 而不是 <img>：裸 HTML 里的 src 不会被 Vite 处理（实测原样保留），
+        // 真实资源地址由 buildEnd 扫描产物 assets 目录后还原（见 RSS_IMAGE_MARKER）。
+        const marker =
+          `<span hidden ${RSS_IMAGE_MARKER}="${escapeAttr(src)}"` +
+          ` ${RSS_IMAGE_ALT_MARKER}="${escapeAttr(alt)}"></span>`
+
+        return `${marker}<ClientOnly><n-image src="${src}" alt="${alt}"/></ClientOnly>`
       }
     },
   },
   async buildEnd(siteConfig) {
-    const baseUrl = 'https://mqnu00.github.io/blog/'
     const feed = new Feed({
       title: siteConfig.site.title,
       description: siteConfig.site.description,
-      id: baseUrl,
-      link: baseUrl,
+      id: SITE_URL,
+      link: SITE_URL,
       language: siteConfig.site.lang,
       copyright: `© ${COPYRIGHT_YEAR} 广习习`,
-      image: 'https://mqnu00.github.io/blog/favicon.ico',
+      image: `${SITE_ORIGIN}${SITE_BASE}/favicon.ico`,
     })
 
     const pageRoot = path.resolve(__dirname, '..')
+    // 产物中带 hash 的图片地址表（用于还原 markdown 里的相对图片路径）
+    const assetUrls = await buildAssetUrlMap(siteConfig.outDir)
     // 遍历所有页面
     for (const page of siteConfig.pages) {
       if (!page.startsWith('posts/')) continue
@@ -93,10 +183,21 @@ export default defineConfig({
       // 删除不需要的标签
       // $('script, style, link, meta, nav, footer').remove()
 
+      // 还原图片：把 markdown 图片规则注入的隐藏标记换成真正的 <img>。
+      // 标记所在位置就是图片原本的位置，因此顺序和排版都能保持。
+      const postRelDir = path.posix.dirname(page)
+      $(`.vp-doc [${RSS_IMAGE_MARKER}]`).each((_, el) => {
+        const marker = $(el)
+        const src = marker.attr(RSS_IMAGE_MARKER) || ''
+        const alt = marker.attr(RSS_IMAGE_ALT_MARKER) || ''
+        const imgUrl = resolveRssImageUrl(src, postRelDir, assetUrls)
+        marker.replaceWith(imgUrl ? `<img src="${imgUrl}" alt="${escapeAttr(alt)}">` : '')
+      })
+
       if (!data.title) continue
       if (data.publish === false) continue
 
-      const url = `${baseUrl}/${page.replace('.md', '.html')}`
+      const url = `${SITE_ORIGIN}${SITE_BASE}/${page.replace('.md', '.html')}`
       const date = typeof data.date === 'string' ? data.date + '+0800' : data.date || new Date()
       console.log(date)
       console.log(moment(date, 'YYYY-MM-DD HH:mmZ').toDate())
@@ -120,7 +221,6 @@ export default defineConfig({
   },
   async transformPageData(pageData) {
     if (mode === 'test') return
-    const baseUrl = 'https://mqnu00.github.io/blog'
     const githubPath = '/blog/' + pageData.filePath
     const history = await getGithubHistory({
       owner: 'mqnu00',
@@ -139,7 +239,7 @@ export default defineConfig({
       history,
     }
 
-    pageData.url = `${baseUrl}/${pageData.filePath.replace('.md', '.html')}`
+    pageData.url = `${SITE_ORIGIN}${SITE_BASE}/${pageData.filePath.replace('.md', '.html')}`
 
     // -------------------------
     // 写回 Markdown 文件
