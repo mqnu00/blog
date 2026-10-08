@@ -358,10 +358,6 @@ import {
 const highlighter: Ref<
   HighlighterGeneric<BundledLanguage, BundledTheme> | null | undefined
 > = ref();
-const isClient = ref(false);
-onMounted(() => {
-  isClient.value = true;
-});
 createHighlighter({
   themes: ["github-light", "github-dark"],
   langs: ["javascript", "typescript", "vue", "html", "css"],
@@ -1050,9 +1046,5 @@ function randomColor() {
   font-size: 12px;
   line-height: 1.5;
   color: var(--vp-c-text-3);
-}
-
-.reply-timeline .n-timeline-item-content__meta {
-  /* padding-left: 10px; */
 }
 </style>

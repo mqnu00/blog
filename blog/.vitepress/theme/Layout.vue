@@ -18,18 +18,9 @@
 import {
   darkTheme,
   dateZhCN,
-  GlobalComponentConfig,
-  GlobalThemeOverrides,
-  NButton,
   NConfigProvider,
-  NH1,
   NMessageProvider,
-  NP,
-  NTag,
   NThemeEditor,
-  NTimeline,
-  NTimelineItem,
-  useMessage,
   zhCN,
 } from "naive-ui";
 import Page from "./Page.vue";
