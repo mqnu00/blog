@@ -22,3 +22,5 @@ blog/.vitepress/.temp/
 blog/.vitepress/dist/
 
 localconfig.json
+# 本地 GitHub token（切勿提交）
+discussion-token
