@@ -915,6 +915,37 @@ function randomColor() {
   scroll-margin-top: calc(var(--vp-nav-height) + 16px);
 }
 
+/*
+ * 评论卡片 / 发布框
+ *
+ * naive 默认描边是 #efeff5，落在月白底上几乎看不见；而 bordered 卡片本身不投影，
+ * 所以整块"糊"在页面上，既没有边界也没有层次。这里补三件事：
+ *   1. 描边换成天青线（--dds-c-card-* 见 style.css），浅色衬白卡 3.0:1、深色衬夜岫 3.2:1；
+ *   2. 接触阴影 + 环境阴影两层叠加，卡片才有"浮起来"的立体感；
+ *   3. 圆角统一 8px，与底部回复框、文章历史面板保持一致。
+ * 深色模式下纯阴影不可见，改由描边 + 顶部内高光把卡片立起来（令牌里已分主题处理）。
+ */
+.discussion.n-card,
+.n-card[data-comment-box] {
+  border-color: var(--dds-c-card-border);
+  border-radius: 8px;
+  /* 卡内面板（回复列表）是直角底色，不裁掉会顶出圆角 */
+  overflow: hidden;
+  background-color: var(--discuss-bg-color);
+  box-shadow: var(--dds-c-card-shadow);
+  transition:
+    border-color 0.25s ease,
+    box-shadow 0.25s ease,
+    transform 0.25s ease;
+}
+
+.discussion.n-card:hover,
+.n-card[data-comment-box]:hover {
+  border-color: var(--dds-c-card-border-hover);
+  box-shadow: var(--dds-c-card-shadow-hover);
+  transform: translateY(-1px);
+}
+
 .discussion--flash {
   animation: discussion-flash 0.9s ease-out;
 }
@@ -925,7 +956,7 @@ function randomColor() {
   }
 
   100% {
-    box-shadow: none;
+    box-shadow: var(--dds-c-card-shadow);
   }
 }
 
@@ -962,10 +993,10 @@ function randomColor() {
   z-index: 5;
   margin-top: 12px;
   padding: 10px 12px max(10px, env(safe-area-inset-bottom));
-  border: 1px solid var(--vp-c-divider);
+  border: 1px solid var(--dds-c-card-border);
   border-radius: 8px;
-  background-color: var(--vp-c-bg);
-  box-shadow: 0 -6px 16px rgb(0 0 0 / 8%);
+  background-color: var(--discuss-bg-color);
+  box-shadow: var(--dds-c-card-shadow);
 }
 
 .reply-dock--flash {
@@ -978,7 +1009,7 @@ function randomColor() {
   }
 
   100% {
-    box-shadow: 0 -6px 16px rgb(0 0 0 / 8%);
+    box-shadow: var(--dds-c-card-shadow);
   }
 }
 

@@ -61,9 +61,11 @@ const cssVars = computed(() => {
       "--hint-bg-color": isDark.value
         ? "rgb(19, 30, 44)"
         : "rgb(220, 232, 237)",
+      // 评论卡片改用卡片面色：浅色取纯素白、深色取比内嵌面板略亮的夜色。
+      // 原来与页面底衬同色（月白 / 深夜），卡片完全没有层次，只靠一条看不见的描边。
       "--discuss-bg-color": isDark.value
-        ? "rgb(13, 21, 32)"
-        : "rgb(238, 247, 242)",
+        ? "rgb(24, 36, 52)"
+        : "rgb(255, 255, 255)",
       "--hint-content-bg-hover": isDark.value
         ? "rgb(25, 35, 50)"
         : "rgb(215, 228, 235)",
