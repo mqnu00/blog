@@ -134,6 +134,12 @@
                   :key="reIndex"
                 >
                   <NTimelineItem
+                    class="reply-item"
+                    :class="{
+                      'reply-item--flash':
+                        flashReplyKey === `${index}-${reIndex}`,
+                    }"
+                    :data-reply-index="reIndex"
                     :time="reply?.createDate?.toLocaleString()"
                     :color="randomColor()"
                   >
@@ -283,9 +289,9 @@
         <NButton
           text
           size="tiny"
-          @click="scrollToTargetComment"
+          @click="scrollToTarget"
         >
-          查看原评论
+          {{ replyTarget.kind === "reply" ? "查看原回复" : "查看原评论" }}
         </NButton>
         <NButton
           text
@@ -442,6 +448,8 @@ interface ReplyTarget {
   body: string;
   /** 该线程顶层评论的作者，用于说明新回复会挂在哪里 */
   threadLogin: string;
+  /** 二级回复在回复列表中的下标，用于精确滚到那一条 */
+  replyIndex?: number;
 }
 
 const loading = ref(false);
@@ -466,7 +474,11 @@ const commentBoxRef = ref<InstanceType<typeof InputBox> | null>(null);
 const dockRef = ref<HTMLElement | null>(null);
 const dockFlash = ref(false);
 const flashCommentIndex = ref<number | null>(null);
-let flashTimer: ReturnType<typeof setTimeout> | null = null;
+/** 命中二级回复时，单独标出那一条（`${commentIndex}-${replyIndex}`） */
+const flashReplyKey = ref<string | null>(null);
+// 回复框与定位目标各自计时，避免互相把对方的闪烁清掉
+let dockFlashTimer: ReturnType<typeof setTimeout> | null = null;
+let targetFlashTimer: ReturnType<typeof setTimeout> | null = null;
 
 const REPLY_PAGE_SIZE = 5;
 
@@ -667,6 +679,7 @@ function startReply(
       target = {
         kind,
         commentIndex,
+        replyIndex,
         login: reply.author?.login ?? "",
         body: reply.body,
         threadLogin,
@@ -696,13 +709,13 @@ async function revealReplyBox() {
 
 function flashDock() {
   dockFlash.value = false;
-  if (flashTimer) clearTimeout(flashTimer);
+  if (dockFlashTimer) clearTimeout(dockFlashTimer);
   // 先置空再加类，保证连点同一条时动画能重新播放
   void nextTick(() => {
     dockFlash.value = true;
-    flashTimer = setTimeout(() => {
+    dockFlashTimer = setTimeout(() => {
       dockFlash.value = false;
-      flashTimer = null;
+      dockFlashTimer = null;
     }, 900);
   });
 }
@@ -712,23 +725,49 @@ function clearReplyTarget() {
   quoteEnabled.value = true;
 }
 
-async function scrollToTargetComment() {
+/**
+ * 定位到被回复的那一条：
+ * - 一级评论 → 整张评论卡片；
+ * - 二级回复 → 精确到回复列表里的那一条（之前只滚到整张卡片，还得自己在回复堆里找）。
+ * 二级回复若已不在 DOM 里（例如回复被重新分页），退回整张卡片，至少不让人迷路。
+ */
+async function scrollToTarget() {
   const target = replyTarget.value;
   if (!target) return;
   openThread(target.commentIndex);
   await nextTick();
-  const el = document.querySelector<HTMLElement>(
+  const cardEl = document.querySelector<HTMLElement>(
     `[data-comment-index="${target.commentIndex}"]`,
   );
-  el?.scrollIntoView({ behavior: "smooth", block: "start" });
+  const replyEl =
+    target.kind === "reply" && target.replyIndex != null
+      ? (cardEl?.querySelector<HTMLElement>(
+          `[data-reply-index="${target.replyIndex}"]`,
+        ) ?? null)
+      : null;
+  const el = replyEl ?? cardEl;
+  if (!el) return;
+  el.scrollIntoView({ behavior: "smooth", block: "start" });
+  flashTarget(target, replyEl != null);
+}
+
+/** 闪一下：整张卡片描边 + （命中二级回复时）那一条的轮廓 */
+function flashTarget(target: ReplyTarget, hitReply: boolean) {
+  if (targetFlashTimer) clearTimeout(targetFlashTimer);
   flashCommentIndex.value = null;
-  await nextTick();
-  flashCommentIndex.value = target.commentIndex;
-  if (flashTimer) clearTimeout(flashTimer);
-  flashTimer = setTimeout(() => {
-    flashCommentIndex.value = null;
-    flashTimer = null;
-  }, 900);
+  flashReplyKey.value = null;
+  void nextTick(() => {
+    flashCommentIndex.value = target.commentIndex;
+    flashReplyKey.value =
+      hitReply && target.replyIndex != null
+        ? `${target.commentIndex}-${target.replyIndex}`
+        : null;
+    targetFlashTimer = setTimeout(() => {
+      flashCommentIndex.value = null;
+      flashReplyKey.value = null;
+      targetFlashTimer = null;
+    }, 1400);
+  });
 }
 
 async function focusCommentBox() {
@@ -943,7 +982,7 @@ function randomColor() {
 }
 
 .discussion--flash {
-  animation: discussion-flash 0.9s ease-out;
+  animation: discussion-flash 1.4s ease-out;
 }
 
 @keyframes discussion-flash {
@@ -951,8 +990,42 @@ function randomColor() {
     box-shadow: 0 0 0 3px var(--vp-c-brand-3);
   }
 
+  70% {
+    box-shadow: 0 0 0 3px var(--vp-c-brand-3);
+  }
+
   100% {
     box-shadow: var(--dds-c-card-shadow);
+  }
+}
+
+/*
+ * 二级回复：定位到这一条时单独描个轮廓（整张卡片也同时闪一下，
+ * 这样既知道是哪条评论，也知道是里面哪一条回复）。
+ */
+.reply-item {
+  border-radius: 6px;
+  scroll-margin-top: calc(var(--vp-nav-height) + 16px);
+}
+
+.reply-item--flash {
+  animation: reply-item-flash 1.4s ease-out;
+}
+
+@keyframes reply-item-flash {
+  0% {
+    background-color: var(--vp-c-brand-soft);
+    box-shadow: 0 0 0 2px var(--vp-c-brand-3);
+  }
+
+  70% {
+    background-color: var(--vp-c-brand-soft);
+    box-shadow: 0 0 0 2px var(--vp-c-brand-3);
+  }
+
+  100% {
+    background-color: transparent;
+    box-shadow: 0 0 0 2px transparent;
   }
 }
 
