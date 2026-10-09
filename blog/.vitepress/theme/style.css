@@ -41,6 +41,20 @@
 
   /* 界面描边 */
   --dds-c-border: #d8e3e7; /* 云峰白 · 分割线 */
+
+  /* 卡片层次 —— 评论卡片与底部回复框
+     naive 默认描边 #efeff5 落在月白底上几乎看不见，bordered 卡片也不投影，
+     所以这里单独给一组描边/阴影（描边需同时衬得起白卡与月白底） */
+  --dds-c-card-border: #5f9cb8; /* 天青 · 卡片描边 (衬纯素白 3.0:1) */
+  --dds-c-card-border-hover: #3d87a8; /* 靛青 · 悬停描边 */
+  --dds-c-card-shadow:
+    0 1px 2px rgba(26, 41, 64, 0.06),
+    0 6px 16px -6px rgba(26, 41, 64, 0.14),
+    0 14px 32px -20px rgba(26, 41, 64, 0.2);
+  --dds-c-card-shadow-hover:
+    0 2px 4px rgba(26, 41, 64, 0.08),
+    0 10px 24px -8px rgba(26, 41, 64, 0.18),
+    0 20px 40px -24px rgba(26, 41, 64, 0.24);
 }
 
 .dark {
@@ -68,6 +82,18 @@
 
   /* 界面描边 */
   --dds-c-border: #2d2e36; /* 牛角灰 · 分割线 */
+
+  /* 卡片层次 —— 深夜底上纯阴影几乎不可见，改由描边 + 顶部内高光把卡片"立"起来 */
+  --dds-c-card-border: #50707f; /* 黛青 · 卡片描边 (夜岫上 3.2:1) */
+  --dds-c-card-border-hover: #6f96a8; /* 黛青-亮 · 悬停描边 */
+  --dds-c-card-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 1px 2px rgba(0, 0, 0, 0.4),
+    0 8px 20px -8px rgba(0, 0, 0, 0.48);
+  --dds-c-card-shadow-hover:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 2px 6px rgba(0, 0, 0, 0.48),
+    0 12px 28px -10px rgba(0, 0, 0, 0.56);
 }
 
 /**

@@ -1,5 +1,8 @@
 <template>
-  <NCard style="height: auto">
+  <NCard
+    data-comment-box
+    style="height: auto"
+  >
     <template #header>
       评论
     </template>
@@ -9,7 +12,11 @@
         size="large"
       />
       <template v-else>
-        <InputBox v-model:value="commentContent" />
+        <InputBox
+          ref="commentBoxRef"
+          v-model:comment-content="commentContent"
+          placeholder="友善发言，说说你的想法～"
+        />
       </template>
     </template>
     <template #footer>
@@ -45,11 +52,19 @@
   >
     <NCard
       class="discussion"
+      :class="{ 'discussion--flash': flashCommentIndex === index }"
+      :data-comment-index="index"
       style="background-color: var(--discuss-bg-color)"
     >
       <template #header>
         <div
-          style="display: flex; flex-direction: row; gap: 10px; font-size: 14px"
+          style="
+            display: flex;
+            flex-direction: row;
+            gap: 10px;
+            font-size: 14px;
+            align-items: center;
+          "
         >
           <NAvatar
             round
@@ -71,21 +86,33 @@
             </template>
             <NTime :time="discussion?.createDate" />
           </NPopover>
-          <span
-            class="quote-link"
-            @click="quoteComment(index)"
-          >回复</span>
+          <NButton
+            text
+            size="tiny"
+            class="reply-link"
+            @click="startReply(index, 'comment')"
+          >
+            <template #icon>
+              <NIcon><ArrowReply20Regular /></NIcon>
+            </template>
+            回复
+          </NButton>
         </div>
       </template>
       <template #default>
         <div
           style="margin-left: 20px; background-color: var(--discuss-bg-color)"
           class="vp-doc"
-          v-html="DOMPurify.sanitize(md.render(discussion?.body || ''))"
+          v-html="renderMarkdown(discussion?.body)"
         />
       </template>
       <template #footer>
+        <!--
+          这里只负责"看回复"；写回复统一交给底部的共用回复框，
+          避免每条评论底下都挂一个默认折叠的输入框（点了「回复」却什么也看不见）。
+        -->
         <NCollapse
+          v-model:expanded-names="expandedNames"
           size="large"
           style="
             background-color: var(--hint-bg-color);
@@ -94,10 +121,10 @@
             padding-bottom: 10px;
             padding-right: 20px;
           "
-          @item-header-click="expandReply"
+          @item-header-click="onCollapseHeaderClick"
         >
           <NCollapseItem
-            title="回复"
+            :title="collapseTitle(index)"
             :name="index"
           >
             <div>
@@ -107,6 +134,12 @@
                   :key="reIndex"
                 >
                   <NTimelineItem
+                    class="reply-item"
+                    :class="{
+                      'reply-item--flash':
+                        flashReplyKey === `${index}-${reIndex}`,
+                    }"
+                    :data-reply-index="reIndex"
                     :time="reply?.createDate?.toLocaleString()"
                     :color="randomColor()"
                   >
@@ -119,10 +152,17 @@
                       />
                     </template>
                     <span>{{ `${reply?.author?.login}:` }}</span>
-                    <span
-                      class="quote-link"
-                      @click="quoteReply(index, reIndex)"
-                    >回复</span>
+                    <NButton
+                      text
+                      size="tiny"
+                      class="reply-link"
+                      @click="startReply(index, 'reply', reIndex)"
+                    >
+                      <template #icon>
+                        <NIcon><ArrowReply20Regular /></NIcon>
+                      </template>
+                      回复
+                    </NButton>
                     <div
                       style="
                         padding-left: 20px;
@@ -131,22 +171,17 @@
                         background-color: var(--hint-bg-color);
                       "
                       class="vp-doc"
-                      v-html="DOMPurify.sanitize(md.render(reply?.body || ''))"
+                      v-html="renderMarkdown(reply?.body)"
                     />
                   </NTimelineItem>
                 </template>
-                <NTimelineItem v-if="discussion?.replies?.loading ?? true">
+                <NTimelineItem v-if="isRepliesLoading(index)">
                   <template #icon>
                     <NSpin :size="16" />
                   </template>
                   加载中
                 </NTimelineItem>
-                <NTimelineItem
-                  v-else-if="
-                    (discussion?.replies?.nodes?.length ?? 0) <
-                      (discussion?.replies?.totalCount ?? 0)
-                  "
-                >
+                <NTimelineItem v-else-if="hasMoreReplies(index)">
                   <template #icon>
                     <NButton
                       text
@@ -165,51 +200,12 @@
                   </template>
                 </NTimelineItem>
               </NTimeline>
-              <NCard
-                style="
-                  background-color: var(--hint-bg-color);
-                  margin-top: 10px;
-                  padding-right: 10px;
-                  padding-bottom: 10px;
-                  border: 1px solid white;
-                "
+              <div
+                v-if="isRepliesEmpty(index)"
+                class="reply-empty"
               >
-                <template #header>
-                  回复
-                </template>
-                <template #default>
-                  <NSkeleton
-                    v-if="loading === true"
-                    height="100%"
-                    size="large"
-                  />
-                  <template v-else>
-                    <InputBox
-                      v-model:comment-content="discussion!.replyContent"
-                    />
-                  </template>
-                </template>
-                <template #footer>
-                  <NFlex style="justify-content: space-between">
-                    <div />
-                    <div>
-                      <NSkeleton
-                        v-if="loading === true"
-                        :width="80"
-                        round
-                        size="medium"
-                      />
-                      <NButton
-                        v-else
-                        :loading="sendReplyLoading"
-                        @click="sendReply(index)"
-                      >
-                        发送
-                      </NButton>
-                    </div>
-                  </NFlex>
-                </template>
-              </NCard>
+                还没有回复，点上面的「回复」来抢第一个沙发
+              </div>
             </div>
           </NCollapseItem>
         </NCollapse>
@@ -238,6 +234,95 @@
     </NButton>
     <div style="width: 47%; border-top: 1px solid rgb(155 167 167)" />
   </div>
+
+  <!--
+    共用回复框：吸附在视口底部（sticky 而不是 fixed，手机上不会被输入法顶飞），
+    滚出评论区后自动落位。未选择回复对象时只占一条细提示，不占屏幕。
+  -->
+  <div
+    v-if="discussionList != null"
+    ref="dockRef"
+    class="reply-dock"
+    :class="{
+      'reply-dock--active': replyTarget !== null,
+      'reply-dock--flash': dockFlash,
+    }"
+  >
+    <div
+      v-if="replyTarget === null"
+      class="reply-dock__empty"
+    >
+      <NIcon :size="16">
+        <Comment20Regular />
+      </NIcon>
+      <span>想回复谁，就点那条评论或回复右侧的「回复」</span>
+      <div style="flex: 1" />
+      <NButton
+        text
+        size="tiny"
+        @click="focusCommentBox"
+      >
+        直接发表评论 ↑
+      </NButton>
+    </div>
+    <template v-else>
+      <div class="reply-dock__head">
+        <NIcon :size="16">
+          <ArrowReply20Regular />
+        </NIcon>
+        <span class="reply-dock__kind">{{
+          replyTarget.kind === "comment" ? "回复评论" : "回复回复"
+        }}</span>
+        <span class="reply-dock__who">@{{ replyTarget.login }}</span>
+        <span
+          v-if="replyTarget.kind === 'reply'"
+          class="reply-dock__thread"
+        >· 在 @{{ replyTarget.threadLogin }} 的评论下</span>
+        <div style="flex: 1" />
+        <NButton
+          text
+          size="tiny"
+          @click="quoteEnabled = !quoteEnabled"
+        >
+          {{ quoteEnabled ? "取消引用" : "恢复引用" }}
+        </NButton>
+        <NButton
+          text
+          size="tiny"
+          @click="scrollToTarget"
+        >
+          {{ replyTarget.kind === "reply" ? "查看原回复" : "查看原评论" }}
+        </NButton>
+        <NButton
+          text
+          size="tiny"
+          @click="clearReplyTarget"
+        >
+          关闭
+        </NButton>
+      </div>
+      <InputBox
+        ref="replyBoxRef"
+        v-model:comment-content="replyDraft"
+        :quote="replyQuotePreview"
+        placeholder="友善发言……支持 Markdown"
+      />
+      <NFlex
+        justify="space-between"
+        align="center"
+      >
+        <span class="reply-dock__tip">{{ replyTip }}</span>
+        <NButton
+          type="primary"
+          size="small"
+          :loading="sendReplyLoading"
+          @click="sendReply"
+        >
+          发送回复
+        </NButton>
+      </NFlex>
+    </template>
+  </div>
 </template>
 <script setup lang="ts">
 import type {
@@ -245,12 +330,10 @@ import type {
   GetDiscussionByNumberQuery,
   GetUserInfoQuery,
   GetDiscussionCommentReplyQuery,
-  Discussion,
 } from "@blog/.vitepress/utils/github/graphql/github";
 import { GithubDiscussApi } from "@blog/.vitepress/utils/github/discussion";
 import {
   NAvatar,
-  NDivider,
   NIcon,
   NPopover,
   NStatistic,
@@ -258,13 +341,13 @@ import {
   NTimelineItem,
   useMessage,
 } from "naive-ui";
-import type {
-  CollapseItemHeaderSlotProps,
-  CollapseItemProps,
-  CollapseProps,
-} from "naive-ui";
+import type { CollapseProps } from "naive-ui";
 import { GithubUserApi } from "@blog/.vitepress/utils/github/user";
-import { ChevronCircleDown20Regular, ReceiptBag20Filled } from "@vicons/fluent";
+import {
+  ArrowReply20Regular,
+  ChevronCircleDown20Regular,
+  Comment20Regular,
+} from "@vicons/fluent";
 import moment from "moment";
 import MarkdownIt from "markdown-it";
 import { useData } from "vitepress";
@@ -272,19 +355,20 @@ import { createHighlighter } from "shiki";
 import type { BundledLanguage, BundledTheme, HighlighterGeneric } from "shiki";
 import InputBox from "./InputBox.vue";
 import DOMPurify from "isomorphic-dompurify";
+import {
+  buildReplyBody,
+  formatMention,
+  formatQuoteBlock,
+} from "@blog/.vitepress/utils/discussion/quote";
 
 const highlighter: Ref<
   HighlighterGeneric<BundledLanguage, BundledTheme> | null | undefined
 > = ref();
-const isClient = ref(false);
-onMounted(() => {
-  isClient.value = true;
-});
 createHighlighter({
   themes: ["github-light", "github-dark"],
   langs: ["javascript", "typescript", "vue", "html", "css"],
 }).then((res) => {
-  highlighter.value = res
+  highlighter.value = res;
   md.value = new MarkdownIt({
     highlight: function (str, lang) {
       if (lang && highlighter.value?.getLoadedLanguages().includes(lang)) {
@@ -303,37 +387,44 @@ createHighlighter({
     breaks: true, // 将换行符转换为 <br>
     xhtmlOut: true, // 使用 XHTML 闭合标签
   });
-})
+});
 const message = useMessage();
 const { isDark } = useData();
-const md: Ref<MarkdownIt | null | undefined> = ref()
+const md: Ref<MarkdownIt | null | undefined> = ref();
 provide("md", md);
 
+/** 渲染 Markdown；高亮器就绪前返回空串（md 是 ref，就绪后会自动重渲染） */
+function renderMarkdown(body: string | null | undefined) {
+  if (!md.value) return "";
+  return DOMPurify.sanitize(md.value.render(body || ""));
+}
+
 // type 使用 & 交叉类型扩展
-type DiscussionType = NonNullable<NonNullable<GetDiscussionByNumberQuery["repository"]>["discussion"]>
-type CommentNode = NonNullable<DiscussionType["comments"]["nodes"]>[0]
-type ReplyNode = NonNullable<NonNullable<NonNullable<GetDiscussionCommentReplyQuery["node"]>["replies"]>["nodes"]>[0]
+type DiscussionType = NonNullable<
+  NonNullable<GetDiscussionByNumberQuery["repository"]>["discussion"]
+>;
+type CommentNode = NonNullable<DiscussionType["comments"]["nodes"]>[0];
+type ReplyNode = NonNullable<
+  NonNullable<
+    NonNullable<GetDiscussionCommentReplyQuery["node"]>["replies"]
+  >["nodes"]
+>[0];
+type ReplyNodeWithUser = Omit<NonNullable<ReplyNode>, "reply"> & {
+  createDate?: Date;
+  userInfo?: GetUserInfoQuery["user"];
+};
 type DiscussionWithUser = Omit<DiscussionType, "comments"> & {
   comments: Omit<DiscussionType["comments"], "nodes"> & {
     nodes: Array<
       | (CommentNode & {
           userInfo?: GetUserInfoQuery["user"];
           createDate?: Date;
-          startCount?: number;
-          limit?: number;
-          replyContent?: string;
           replies?: Omit<
             NonNullable<GetDiscussionCommentReplyQuery["node"]>["replies"],
             "replies"
           > & {
             loading: boolean;
-            nodes: Array<
-              | null
-              | (Omit<ReplyNode,"reply"> & {
-                  createDate?: number;
-                  userInfo?: GetUserInfoQuery["user"];
-                })
-            > | null;
+            nodes: ReplyNodeWithUser[];
           };
         })
       | null
@@ -347,6 +438,20 @@ const props = defineProps<{
   >;
 }>();
 
+/** 「回复评论」= 顶层评论；「回复回复」= 二级回复 */
+interface ReplyTarget {
+  kind: "comment" | "reply";
+  commentIndex: number;
+  /** 被回复者的登录名 */
+  login: string;
+  /** 被引用／被回复的正文 */
+  body: string;
+  /** 该线程顶层评论的作者，用于说明新回复会挂在哪里 */
+  threadLogin: string;
+  /** 二级回复在回复列表中的下标，用于精确滚到那一条 */
+  replyIndex?: number;
+}
+
 const loading = ref(false);
 
 const discussClient: Ref<GithubDiscussApi | null> = ref(null);
@@ -356,6 +461,63 @@ const discussionList: Ref<DiscussionWithUser | null | undefined> = ref();
 
 const count = ref(1);
 const discussionListLoading = ref(false);
+
+/** 展开的回复面板（受控，这样「回复」按钮也能把面板打开） */
+const expandedNames = ref<Array<string | number>>([]);
+
+/** 共用回复框 */
+const replyTarget = ref<ReplyTarget | null>(null);
+const replyDraft = ref("");
+const quoteEnabled = ref(true);
+const replyBoxRef = ref<InstanceType<typeof InputBox> | null>(null);
+const commentBoxRef = ref<InstanceType<typeof InputBox> | null>(null);
+const dockRef = ref<HTMLElement | null>(null);
+const dockFlash = ref(false);
+const flashCommentIndex = ref<number | null>(null);
+/** 命中二级回复时，单独标出那一条（`${commentIndex}-${replyIndex}`） */
+const flashReplyKey = ref<string | null>(null);
+// 回复框与定位目标各自计时，避免互相把对方的闪烁清掉
+let dockFlashTimer: ReturnType<typeof setTimeout> | null = null;
+let targetFlashTimer: ReturnType<typeof setTimeout> | null = null;
+
+const REPLY_PAGE_SIZE = 5;
+
+/** 回复某条回复时，GitHub 不接受 replyToId 指向一条回复（只支持两层），
+ *  所以「指向谁」只能靠正文里的 @提及 来表达，这里必须带上。 */
+const replyMention = computed(() =>
+  replyTarget.value?.kind === "reply"
+    ? formatMention(replyTarget.value.login)
+    : "",
+);
+const replyQuoteBlock = computed(() =>
+  replyTarget.value && quoteEnabled.value
+    ? formatQuoteBlock(replyTarget.value.body)
+    : "",
+);
+/** 展示在输入框上方的只读引用条（与实际发送内容保持一致） */
+const replyQuotePreview = computed(
+  () => `${replyMention.value}${replyQuoteBlock.value}`,
+);
+const replyBody = computed(() =>
+  buildReplyBody({
+    mention: replyMention.value,
+    quote: replyQuoteBlock.value,
+    draft: replyDraft.value,
+  }),
+);
+const replyTip = computed(() => {
+  const target = replyTarget.value;
+  if (!target) return "";
+  if (target.kind === "comment") {
+    return quoteEnabled.value
+      ? `将引用原文后回复 @${target.login}`
+      : `不引用原文，直接回复 @${target.login}`;
+  }
+  return quoteEnabled.value
+    ? `将引用 @${target.login} 的原文；GitHub 讨论只支持两层，新回复会追加在 @${target.threadLogin} 的评论下`
+    : `已取消引用，仍保留 @${target.login}（这是唯一能通知到对方的方式）`;
+});
+
 async function getDiscussionList() {
   loading.value = true;
   discussionListLoading.value = true;
@@ -369,111 +531,263 @@ async function getDiscussionList() {
     await discussClient.value
       ?.getDiscussionByNumber(props.discussion.number, (count.value - 1) * 5, 5)
       .then((res) => {
-        discussionList.value?.comments.nodes?.push(...res?.comments.nodes!);
+        const next = res?.comments.nodes;
+        if (next) discussionList.value?.comments.nodes?.push(...next);
       });
   }
   discussionListLoading.value = false;
-  discussionList.value?.comments.nodes?.forEach(async (comment) => {
-    if (comment) {
-      comment.userInfo = await userClient.value?.getUserInfo(
-        comment?.author?.login as string,
-      );
-      comment.createDate = moment(comment.createdAt).toDate();
-      comment.startCount = 1;
-      comment.limit = 5;
-      comment.replyContent = "";
-    }
-  });
+  for (const comment of discussionList.value?.comments.nodes ?? []) {
+    if (!comment) continue;
+    comment.createDate = moment(comment.createdAt).toDate();
+  }
+  // 头像单独取，失败也不该拖垮整条评论的展示
+  for (const comment of discussionList.value?.comments.nodes ?? []) {
+    const login = comment?.author?.login;
+    if (!comment || !login) continue;
+    userClient.value
+      ?.getUserInfo(login)
+      .then((user) => {
+        if (comment) comment.userInfo = user;
+      })
+      .catch(() => undefined);
+  }
   count.value = count.value + 1;
-  // console.log(discussionList.value)
   loading.value = false;
 }
+
 function initDiscussion() {
   count.value = 1;
   discussionList.value = null;
+  expandedNames.value = [];
+  replyTarget.value = null;
+  replyDraft.value = "";
   getDiscussionList();
 }
 
-async function getDiscussionReply(whichOne: number) {
-  const comment = discussionList.value?.comments.nodes![whichOne];
-  if (comment?.replies) {
-    comment.replies.loading = true;
+/** 展开某条评论的回复面板（顺带触发首次加载） */
+function openThread(commentIndex: number) {
+  if (!expandedNames.value.includes(commentIndex)) {
+    expandedNames.value = [...expandedNames.value, commentIndex];
   }
-  let res = await discussClient.value?.getDiscussionComment(
-    comment?.id!,
-    ((comment?.startCount ?? 1) - 1) * 5,
-    comment?.limit,
-  );
-  for (var reply of res?.nodes ?? []) {
-    if (reply) {
-      reply.createDate = moment(reply?.createdAt).toDate();
-      if (reply.author?.login) {
-        reply.userInfo = await userClient.value?.getUserInfo(
-          reply.author?.login,
-        );
+  void getDiscussionReply(commentIndex, { skipIfLoaded: true });
+}
+
+async function getDiscussionReply(
+  whichOne: number,
+  options: { skipIfLoaded?: boolean } = {},
+) {
+  const comment = discussionList.value?.comments.nodes?.[whichOne];
+  if (!comment) return;
+  if (options.skipIfLoaded && comment.replies != null) return;
+  // 用「已加载条数」当偏移量，新增的回复插进来后也不会重复或漏拉
+  const offset = comment.replies?.nodes?.length ?? 0;
+  if (comment.replies) comment.replies.loading = true;
+  try {
+    const res = await discussClient.value?.getDiscussionComment(
+      comment.id,
+      offset,
+      REPLY_PAGE_SIZE,
+    );
+    const nodes: ReplyNodeWithUser[] = [];
+    for (const reply of res?.nodes ?? []) {
+      if (!reply) continue;
+      const node: ReplyNodeWithUser = {
+        ...reply,
+        createDate: moment(reply.createdAt).toDate(),
+      };
+      const login = reply.author?.login;
+      if (login) {
+        node.userInfo = (await userClient.value?.getUserInfo(login)) ?? null;
       }
+      nodes.push(node);
     }
-  }
-  if (comment && comment?.replies == null) {
-    if (res) {
+    if (comment.replies == null) {
       comment.replies = {
-        ...res,
+        totalCount: res?.totalCount ?? 0,
+        nodes,
+        pageInfo: res?.pageInfo ?? { endCursor: null, hasNextPage: false },
         loading: false,
       };
-    }
-    if (comment.replies) {
+    } else {
+      comment.replies.nodes.push(...nodes);
+      comment.replies.totalCount =
+        res?.totalCount ?? comment.replies.totalCount;
+      comment.replies.pageInfo = res?.pageInfo ?? comment.replies.pageInfo;
       comment.replies.loading = false;
     }
-  } else {
-    comment?.replies!.nodes?.push(...res?.nodes!);
-    comment!.replies!.loading = false;
-  }
-  if (discussionList.value) {
-    discussionList.value.comments.nodes![whichOne]!.startCount =
-      (discussionList.value.comments.nodes![whichOne]!.startCount ?? 1) + 1;
+  } catch (err) {
+    if (comment.replies) comment.replies.loading = false;
+    console.error(err);
+    message.error(`回复加载失败：${apiErrorMessage(err)}`);
   }
 }
-const expandReply: CollapseProps["onItemHeaderClick"] = (data) => {
+
+const onCollapseHeaderClick: CollapseProps["onItemHeaderClick"] = (data) => {
   if (data.expanded) {
-    if (discussionList.value?.comments.nodes![data.name]?.replies == null) {
-      getDiscussionReply(data.name);
-    }
+    void getDiscussionReply(Number(data.name), { skipIfLoaded: true });
   }
 };
 
-function formatQuote(body: string | null | undefined, author?: string | null) {
-  const raw = body ?? "";
-  const header = author ? `@${author}\n` : "";
-  const lines = raw
-    .replace(/\r\n/g, "\n")
-    .split("\n")
-    .map((line) => `> ${line}`);
-  return [header, ...lines, "", ""].filter(Boolean).join("\n");
+function collapseTitle(index: number) {
+  const comment = discussionList.value?.comments.nodes?.[index];
+  const total = comment?.replies?.totalCount ?? 0;
+  const expanded = expandedNames.value.includes(index);
+  if (total > 0)
+    return expanded ? `收起 ${total} 条回复` : `查看 ${total} 条回复`;
+  return expanded ? "收起回复" : "查看回复";
 }
 
-function quoteComment(commentIndex: number) {
+function isRepliesLoading(index: number) {
+  const replies = discussionList.value?.comments.nodes?.[index]?.replies;
+  return replies == null || replies.loading;
+}
+
+function isRepliesEmpty(index: number) {
+  const replies = discussionList.value?.comments.nodes?.[index]?.replies;
+  return (
+    replies != null && !replies.loading && (replies.nodes?.length ?? 0) === 0
+  );
+}
+
+function hasMoreReplies(index: number) {
+  const replies = discussionList.value?.comments.nodes?.[index]?.replies;
+  if (replies == null || replies.loading) return false;
+  return (replies.nodes?.length ?? 0) < (replies.totalCount ?? 0);
+}
+
+/** 点「回复」：锁定目标 → 展开线程 → 引用 + 聚焦底部回复框 */
+function startReply(
+  commentIndex: number,
+  kind: ReplyTarget["kind"],
+  replyIndex = 0,
+) {
   const comment = discussionList.value?.comments.nodes?.[commentIndex];
   if (!comment) return;
-  const quote = formatQuote(comment.body, comment.author?.login);
-  comment.replyContent = quote;
+  const threadLogin = comment.author?.login ?? "";
+  let target: ReplyTarget | null = null;
+  if (kind === "comment") {
+    target = {
+      kind,
+      commentIndex,
+      login: threadLogin,
+      body: comment.body,
+      threadLogin,
+    };
+  } else {
+    const reply = comment.replies?.nodes?.[replyIndex];
+    if (reply) {
+      target = {
+        kind,
+        commentIndex,
+        replyIndex,
+        login: reply.author?.login ?? "",
+        body: reply.body,
+        threadLogin,
+      };
+    }
+  }
+  if (!target) return;
+  replyTarget.value = target;
+  quoteEnabled.value = true;
+  openThread(commentIndex);
+  void revealReplyBox();
 }
 
-function quoteReply(commentIndex: number, replyIndex: number) {
-  const comment = discussionList.value?.comments.nodes?.[commentIndex];
-  const reply = comment?.replies?.nodes?.[replyIndex];
-  if (!comment || !reply) return;
-  const quote = formatQuote(reply.body, reply.author?.login);
-  comment.replyContent = quote;
+/** 让底部回复框可见并聚焦：本来就吸在视口里就不滚动，避免抢走用户的滚动 */
+async function revealReplyBox() {
+  await nextTick();
+  const el = dockRef.value;
+  if (el) {
+    const rect = el.getBoundingClientRect();
+    const visible = rect.top < window.innerHeight && rect.bottom > 0;
+    if (!visible) el.scrollIntoView({ behavior: "smooth", block: "end" });
+  }
+  await nextTick();
+  await replyBoxRef.value?.focus();
+  flashDock();
+}
+
+function flashDock() {
+  dockFlash.value = false;
+  if (dockFlashTimer) clearTimeout(dockFlashTimer);
+  // 先置空再加类，保证连点同一条时动画能重新播放
+  void nextTick(() => {
+    dockFlash.value = true;
+    dockFlashTimer = setTimeout(() => {
+      dockFlash.value = false;
+      dockFlashTimer = null;
+    }, 900);
+  });
+}
+
+function clearReplyTarget() {
+  replyTarget.value = null;
+  quoteEnabled.value = true;
+}
+
+/**
+ * 定位到被回复的那一条：
+ * - 一级评论 → 整张评论卡片；
+ * - 二级回复 → 精确到回复列表里的那一条（之前只滚到整张卡片，还得自己在回复堆里找）。
+ * 二级回复若已不在 DOM 里（例如回复被重新分页），退回整张卡片，至少不让人迷路。
+ */
+async function scrollToTarget() {
+  const target = replyTarget.value;
+  if (!target) return;
+  openThread(target.commentIndex);
+  await nextTick();
+  const cardEl = document.querySelector<HTMLElement>(
+    `[data-comment-index="${target.commentIndex}"]`,
+  );
+  const replyEl =
+    target.kind === "reply" && target.replyIndex != null
+      ? (cardEl?.querySelector<HTMLElement>(
+          `[data-reply-index="${target.replyIndex}"]`,
+        ) ?? null)
+      : null;
+  const el = replyEl ?? cardEl;
+  if (!el) return;
+  el.scrollIntoView({ behavior: "smooth", block: "start" });
+  flashTarget(target, replyEl != null);
+}
+
+/** 闪一下：整张卡片描边 + （命中二级回复时）那一条的轮廓 */
+function flashTarget(target: ReplyTarget, hitReply: boolean) {
+  if (targetFlashTimer) clearTimeout(targetFlashTimer);
+  flashCommentIndex.value = null;
+  flashReplyKey.value = null;
+  void nextTick(() => {
+    flashCommentIndex.value = target.commentIndex;
+    flashReplyKey.value =
+      hitReply && target.replyIndex != null
+        ? `${target.commentIndex}-${target.replyIndex}`
+        : null;
+    targetFlashTimer = setTimeout(() => {
+      flashCommentIndex.value = null;
+      flashReplyKey.value = null;
+      targetFlashTimer = null;
+    }, 1400);
+  });
+}
+
+async function focusCommentBox() {
+  await commentBoxRef.value?.focus();
+  document
+    .querySelector<HTMLElement>("[data-comment-box]")
+    ?.scrollIntoView({ behavior: "smooth", block: "center" });
 }
 
 // 发送评论
-const commentContent = ref();
+const commentContent = ref<string>("");
 const sendCommentLoading = ref(false);
 async function sendComment() {
   if (!commentContent.value || commentContent.value === "") {
     message.error("评论内容为空！");
-  } else if (discussionList.value?.id) {
-    sendCommentLoading.value = true;
+    return;
+  }
+  if (!discussionList.value?.id) return;
+  sendCommentLoading.value = true;
+  try {
     const res = await discussClient.value?.addDiscussionComment(
       discussionList.value.id,
       commentContent.value,
@@ -485,40 +799,109 @@ async function sendComment() {
     } else {
       message.error("评论发送失败！");
     }
+  } catch (err) {
+    console.error(err);
+    message.error(`评论发送失败：${apiErrorMessage(err)}`);
+  } finally {
+    sendCommentLoading.value = false;
   }
-  sendCommentLoading.value = false;
 }
+
 // 发送回复
 const sendReplyLoading = ref(false);
-async function sendReply(commentIndex: number) {
-  const comments = discussionList.value?.comments.nodes!;
-  if (
-    !comments[commentIndex]?.replyContent ||
-    comments[commentIndex]?.replyContent === ""
-  ) {
+async function sendReply() {
+  const target = replyTarget.value;
+  if (!target) {
+    message.warning("请先点某条评论或回复的「回复」来选择对象");
+    return;
+  }
+  const comment = discussionList.value?.comments.nodes?.[target.commentIndex];
+  if (!comment?.id || !discussionList.value?.id) return;
+  if (replyBody.value.trim() === "") {
     message.error("回复内容为空！");
-  } else if (comments[commentIndex]?.id) {
-    sendReplyLoading.value = true;
+    return;
+  }
+  sendReplyLoading.value = true;
+  try {
     const res = await discussClient.value?.addReplyToComment(
-      discussionList.value?.id!,
-      comments[commentIndex].id,
-      comments[commentIndex].replyContent!,
+      discussionList.value.id,
+      comment.id,
+      replyBody.value,
     );
     if (res?.id) {
       message.success("回复发送成功！");
-      comments[commentIndex].replyContent! = "";
-      initDiscussion();
+      appendReply(target.commentIndex, res);
+      replyDraft.value = "";
+      clearReplyTarget();
     } else {
       message.error("回复发送失败！");
     }
+  } catch (err) {
+    console.error(err);
+    message.error(`回复发送失败：${apiErrorMessage(err)}`);
+  } finally {
+    sendReplyLoading.value = false;
   }
-  sendReplyLoading.value = false;
+}
+
+/**
+ * 就地追加新回复，代替整页刷新。
+ * 好处：滚动位置、展开状态、已加载的分页都保留，发完立刻能看见自己那条。
+ */
+function appendReply(
+  commentIndex: number,
+  created: {
+    id: string;
+    body: string;
+    createdAt: string;
+    author: { login: string } | null;
+  },
+) {
+  const comment = discussionList.value?.comments.nodes?.[commentIndex];
+  if (!comment) return;
+  const node: ReplyNodeWithUser = {
+    body: created.body,
+    createdAt: created.createdAt,
+    url: null,
+    author: created.author,
+    createDate: moment(created.createdAt).toDate(),
+    userInfo: null,
+  };
+  if (comment.replies == null) {
+    comment.replies = {
+      totalCount: 1,
+      nodes: [node],
+      pageInfo: { endCursor: null, hasNextPage: false },
+      loading: false,
+    };
+  } else {
+    comment.replies.nodes.push(node);
+    comment.replies.totalCount = (comment.replies.totalCount ?? 0) + 1;
+  }
+  const login = created.author?.login;
+  if (login) {
+    userClient.value
+      ?.getUserInfo(login)
+      .then((user) => {
+        node.userInfo = user;
+      })
+      .catch(() => undefined);
+  }
+}
+
+/** 从 GraphQL 错误里取一句能给人看的话 */
+function apiErrorMessage(err: unknown) {
+  const errors = (
+    err as { response?: { errors?: Array<{ message?: string }> } }
+  )?.response?.errors;
+  return errors?.[0]?.message ?? "请检查网络或登录状态后重试";
 }
 
 onMounted(async () => {
   accessToken.value = localStorage.getItem("access_token");
   if (accessToken.value == null) {
-    throw new Error("access_token 为空");
+    message.error("登录状态已失效，请重新登录后再评论");
+    return;
   }
   discussClient.value = new GithubDiscussApi(
     accessToken.value,
@@ -536,7 +919,7 @@ onMounted(async () => {
 
 watch(
   () => props.discussion,
-  (newVal) => {
+  () => {
     initDiscussion();
   },
 );
@@ -562,24 +945,179 @@ function randomColor() {
   padding-bottom: 0;
 }
 
+/* 从底部回复框滚回原评论时，别被顶部导航挡住 */
+.discussion {
+  scroll-margin-top: calc(var(--vp-nav-height) + 16px);
+}
+
+/*
+ * 评论卡片 / 发布框
+ *
+ * naive 默认描边是 #efeff5，落在月白底上几乎看不见；而 bordered 卡片本身不投影，
+ * 所以整块"糊"在页面上，既没有边界也没有层次。这里补三件事：
+ *   1. 描边换成天青线（--dds-c-card-* 见 style.css），浅色衬白卡 3.0:1、深色衬夜岫 3.2:1；
+ *   2. 接触阴影 + 环境阴影两层叠加，卡片才有"浮起来"的立体感；
+ *   3. 圆角统一 8px，与底部回复框、文章历史面板保持一致。
+ * 深色模式下纯阴影不可见，改由描边 + 顶部内高光把卡片立起来（令牌里已分主题处理）。
+ */
+.discussion.n-card,
+.n-card[data-comment-box] {
+  border-color: var(--dds-c-card-border);
+  border-radius: 8px;
+  /* 卡内面板（回复列表）是直角底色，不裁掉会顶出圆角 */
+  overflow: hidden;
+  background-color: var(--discuss-bg-color);
+  box-shadow: var(--dds-c-card-shadow);
+  transition:
+    border-color 0.25s ease,
+    box-shadow 0.25s ease,
+    transform 0.25s ease;
+}
+
+.discussion.n-card:hover,
+.n-card[data-comment-box]:hover {
+  border-color: var(--dds-c-card-border-hover);
+  box-shadow: var(--dds-c-card-shadow-hover);
+  transform: translateY(-1px);
+}
+
+.discussion--flash {
+  animation: discussion-flash 1.4s ease-out;
+}
+
+@keyframes discussion-flash {
+  0% {
+    box-shadow: 0 0 0 3px var(--vp-c-brand-3);
+  }
+
+  70% {
+    box-shadow: 0 0 0 3px var(--vp-c-brand-3);
+  }
+
+  100% {
+    box-shadow: var(--dds-c-card-shadow);
+  }
+}
+
+/*
+ * 二级回复：定位到这一条时单独描个轮廓（整张卡片也同时闪一下，
+ * 这样既知道是哪条评论，也知道是里面哪一条回复）。
+ */
+.reply-item {
+  border-radius: 6px;
+  scroll-margin-top: calc(var(--vp-nav-height) + 16px);
+}
+
+.reply-item--flash {
+  animation: reply-item-flash 1.4s ease-out;
+}
+
+@keyframes reply-item-flash {
+  0% {
+    background-color: var(--vp-c-brand-soft);
+    box-shadow: 0 0 0 2px var(--vp-c-brand-3);
+  }
+
+  70% {
+    background-color: var(--vp-c-brand-soft);
+    box-shadow: 0 0 0 2px var(--vp-c-brand-3);
+  }
+
+  100% {
+    background-color: transparent;
+    box-shadow: 0 0 0 2px transparent;
+  }
+}
+
 .reply-expand-text:hover {
   cursor: pointer;
   text-decoration: underline;
   color: rgb(0, 157, 255);
 }
 
-.quote-link {
-  cursor: pointer;
-  margin-left: 10px;
-  color: rgb(0, 157, 255);
-  font-size: 12px;
+.reply-empty {
+  padding: 4px 0 2px;
+  font-size: 13px;
+  color: var(--vp-c-text-3);
 }
 
-.quote-link:hover {
+.reply-link {
+  margin-left: 10px;
+  font-size: 12px;
+  color: rgb(0, 157, 255);
+}
+
+.reply-link:hover {
   text-decoration: underline;
 }
 
-.reply-timeline .n-timeline-item-content__meta {
-  /* padding-left: 10px; */
+/*
+ * 共用回复框：sticky 吸在视口底部。
+ * 选 sticky 而不是 fixed —— 手机上 fixed 底栏会和输入法打架，sticky 跟着文档流走。
+ * 祖先链上不能有 overflow/transform，否则 sticky 会失效（VitePress 内容区是干净的）。
+ */
+.reply-dock {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  margin-top: 12px;
+  padding: 10px 12px max(10px, env(safe-area-inset-bottom));
+  border: 1px solid var(--dds-c-card-border);
+  border-radius: 8px;
+  background-color: var(--discuss-bg-color);
+  box-shadow: var(--dds-c-card-shadow);
+}
+
+.reply-dock--flash {
+  animation: reply-dock-flash 0.9s ease-out;
+}
+
+@keyframes reply-dock-flash {
+  0% {
+    box-shadow: 0 0 0 3px var(--vp-c-brand-3);
+  }
+
+  100% {
+    box-shadow: var(--dds-c-card-shadow);
+  }
+}
+
+.reply-dock__empty {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--vp-c-text-3);
+}
+
+.reply-dock__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+  font-size: 12px;
+}
+
+.reply-dock__kind {
+  color: var(--vp-c-text-2);
+}
+
+.reply-dock__who {
+  font-weight: 600;
+  color: var(--vp-c-brand-1);
+}
+
+.reply-dock__thread {
+  color: var(--vp-c-text-3);
+}
+
+.reply-dock__tip {
+  flex: 1;
+  min-width: 0;
+  padding-right: 8px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--vp-c-text-3);
 }
 </style>
